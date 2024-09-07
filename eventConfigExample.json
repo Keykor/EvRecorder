@@ -1,0 +1,7 @@
+{
+    "events": [
+        { "type": "click", "polling": false },
+        { "type": "mousemove", "polling": true, "interval": 100 },
+        { "type": "keydown", "polling": false }
+    ]
+}
