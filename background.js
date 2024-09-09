@@ -6,40 +6,64 @@ const eventConfig = fetchEventConfig();
 
 // Crea una nueva sesión de captura de eventos si hay una configuración de eventos
 function createNewCaptureSession(tabId) {
-    if (!eventConfig) return;
-    sessionData[tabId] = [];
-    chrome.tabs.sendMessage(tabId, { type: "configureCaptureMethods", config: eventConfig });
+  if (!eventConfig) return;
+  console.log("Creating new capture session for tab", tabId);
+  sessionData[tabId] = [];
+  chrome.tabs.sendMessage(
+    tabId,
+    { type: "captureMethods", config: eventConfig },
+    (response) => {
+      if (chrome.runtime.lastError) {
+        console.error(
+          "Error sending event configuration to new session:",
+          chrome.runtime.lastError.message,
+        );
+      } else {
+        console.log("Event configuration successfully sent", response);
+      }
+    },
+  );
 }
 
 // Finaliza la sesión de captura de eventos y envía los eventos capturados al servidor
 function endCaptureSession(tabId) {
-    if (!sessionData[tabId]) return;
-    sendEventsToServer(tabId);
-    delete sessionData[tabId];
+  if (!sessionData[tabId]) return;
+  console.log("Ending capture session for tab", tabId);
+  sendEventsToServer(tabId);
+  delete sessionData[tabId];
 }
 
 // Configura los métodos de captura de eventos en el content script
 chrome.tabs.onCreated.addListener(async (tab) => {
-    createNewCaptureSession(tab.id);
+  console.log("Tab created:", tab);
+  createNewCaptureSession(tab.id);
 });
 
 // Cuando se cierra una pestaña, envía los eventos capturados al servidor
 chrome.tabs.onRemoved.addListener((tabId) => {
-    endCaptureSession(tabId)
+  console.log("Tab removed:", tabId);
+  endCaptureSession(tabId);
 });
 
 // Cuando se actualiza una pestaña, envía los eventos capturados al servidor y crea una nueva sesión
 chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
-    if (changeInfo.status === 'complete') {
-        endCaptureSession(tabId);
-        createNewCaptureSession(tabId);
-    }
+  if (changeInfo.status === "complete") {
+    console.log("Tab updated:", tabId);
+    endCaptureSession(tabId);
+    createNewCaptureSession(tabId);
+  }
 });
 
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === "event") {
+    sessionData[sender.tab.id].push(message.event);
+  }
+});
 
 // ------------------ Funciones de comunicación con servidores ------------------
 
 // Obtiene la configuración de eventos desde el servidor
+/*
 async function fetchEventConfig() {
     try {
         const response = await fetch('https://example.com/get-event-config');
@@ -63,4 +87,33 @@ function sendEventsToServer(tabId) {
         body: JSON.stringify(sessionData[tabId])
     }).then(response => console.log('Events sent', response))
     .catch(error => console.error('Error sending events', error));
+}
+*/
+
+// ------------------ Funciones de prueba ------------------
+
+function fetchEventConfig() {
+  console.log("Fetching event configuration from server");
+  return {
+    events: [
+      {
+        type: "click",
+        polling: false,
+      },
+      {
+        type: "scroll",
+        polling: true,
+        interval: 1000,
+      },
+      {
+        type: "keydown",
+        polling: false,
+      },
+      { type: "mousemove", polling: true, interval: 100 },
+    ],
+  };
+}
+
+function sendEventsToServer(tabId) {
+  console.log("Sending events to server:", sessionData[tabId]);
 }

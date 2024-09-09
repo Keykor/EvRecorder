@@ -12,9 +12,7 @@ function captureMethods(eventConfig) {
             button: event.button || null,
             scrollY: window.scrollY || null
         };
-        events.push(eventData);
-
-        chrome.runtime.sendMessage({ event: eventData });
+        chrome.runtime.sendMessage({ type: 'event', event: eventData });
     }
 
     // Configura el polling de eventos
@@ -49,7 +47,9 @@ function captureMethods(eventConfig) {
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.type === "configureCaptureMethods") {
-        configureCaptureMethods(message.config);
+    if (message.type === "captureMethods") {
+        console.log("Event configuration received", message.config);
+        captureMethods(message.config);
     }
+    return true;
 });
