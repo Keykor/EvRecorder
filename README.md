@@ -9,7 +9,7 @@ En el archivo "eventConfigExample.json" hay un ejemplo de configuración que deb
 ## Trabajo proyectado
 - [x] Crear estructura del proyecto (sin funcionalidad asegurada)
 - [x] Realizar captura efectiva de eventos de una sesión de navegación
-- [ ] Implementar configuración de información por evento a capturar
+- [x] Implementar configuración de información por evento a capturar
 - [ ] Implementar envío de eventos capturados a un servidor
 - [ ] Crear interfaz de usuario que permita: elegir servidor para comunicarse y establecer identificación propia
 - [ ] Implementar finalización de sesión de navegación por tiempo

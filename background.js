@@ -99,17 +99,24 @@ function fetchEventConfig() {
       {
         type: "click",
         polling: false,
+        attributes: ["clientX", "clientY"],
       },
       {
         type: "scroll",
         polling: true,
-        interval: 1000,
+        interval: 100,
       },
       {
         type: "keydown",
         polling: false,
+        attributes: ["key", "code"],
       },
-      { type: "mousemove", polling: true, interval: 100 },
+      {
+        type: "mousemove",
+        polling: true,
+        interval: 100,
+        attributes: ["screenX", "screenY"],
+      },
     ],
   };
 }

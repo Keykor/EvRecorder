@@ -3,6 +3,7 @@
       {
         type: "click",
         polling: false,
+        attributes: ["clientX", "clientY"]
       },
       {
         type: "scroll",
@@ -12,9 +13,12 @@
       {
         type: "keydown",
         polling: false,
+        attributes: ["key", "code"]
       },
       { type: "mousemove", 
         polling: true, 
-        interval: 100 },
+        interval: 100,
+        attributes: ["screenX", "screenY"]
+        },
     ],
   };
