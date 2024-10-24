@@ -1,4 +1,5 @@
 {
+    timeout: 10000,
     events: [
       {
         type: "click",

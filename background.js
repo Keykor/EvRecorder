@@ -95,6 +95,7 @@ function sendEventsToServer(tabId) {
 function fetchEventConfig() {
   console.log("Fetching event configuration from server");
   return {
+    timeout: 10000,
     events: [
       {
         type: "click",

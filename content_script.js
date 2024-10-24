@@ -1,7 +1,11 @@
 // Función que captura los eventos y los envía al background.js
 function captureMethods(eventConfig) {
+  let eventListeners = [];
+
   // Guarda el evento en un array y lo envía al background.js
   function captureEvent(eventType, attributes, eventData) {
+    console.log("Capturing event", eventType);
+
     let capturedData = {};
 
     // Guardar el tipo de evento
@@ -34,20 +38,18 @@ function captureMethods(eventConfig) {
 
   // Configura el polling de eventos
   let lastEvent = {};
+  let pollingIntervals = [];
   function configurePolling(eventName, pollingInterval, attributes) {
     lastEvent[eventName] = null;
 
-    document.addEventListener(
-      eventName,
-      (e) => {
-        // Guardar el último evento capturado
-        console.log("Capturing event", eventName);
-        lastEvent[eventName] = e;
-      },
-      true,
-    );
+    const eventHandler = (e) => {
+      lastEvent[eventName] = e;
+    };
 
-    setInterval(() => {
+    document.addEventListener(eventName, eventHandler, true);
+    eventListeners.push({ eventName, handler: eventHandler });
+
+    const intervalID = setInterval(() => {
       if (lastEvent[eventName]) {
         // Enviar el último evento capturado
         captureEvent(eventName, attributes, lastEvent[eventName]);
@@ -55,22 +57,49 @@ function captureMethods(eventConfig) {
         lastEvent[eventName] = null;
       }
     }, pollingInterval || 1000);
+
+    // Guardar el intervalID para poder limpiarlo después
+    pollingIntervals.push(intervalID);
   }
 
   // Configura la captura de cada evento en la configuración
   eventConfig.events.forEach((event) => {
     if (!event.polling) {
-      document.addEventListener(
-        event.type,
-        (e) => {
-          captureEvent(event.type, event.attributes, e);
-        },
-        true,
-      );
+      const eventHandler = (e) => {
+        captureEvent(event.type, event.attributes, e);
+      };
+      document.addEventListener(event.type, eventHandler, true);
+      eventListeners.push({ eventName: event.type, handler: eventHandler });
     } else {
       configurePolling(event.type, event.interval, event.attributes);
     }
   });
+
+  // Guardar el timeoutID para poder deternerlo después
+  let timeoutId;
+
+  // Detener la captura de eventos, listeners e intervalos
+  function stopCapturing() {
+    console.log("Stopping event capturing...");
+
+    // Eliminar todos los event listeners
+    eventListeners.forEach(({ eventName, handler }) => {
+      document.removeEventListener(eventName, handler, true);
+    });
+
+    // Detener todos los intervalos de polling
+    pollingIntervals.forEach(clearInterval);
+
+    // Detener el timeout
+    clearTimeout(timeoutId);
+  }
+
+  // Configurar el timeout para detener la captura
+  if (eventConfig.timeout) {
+    timeoutId = setTimeout(() => {
+      stopCapturing();
+    }, eventConfig.timeout);
+  }
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
