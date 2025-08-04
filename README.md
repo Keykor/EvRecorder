@@ -13,5 +13,5 @@ En el archivo "eventConfigExample.json" hay un ejemplo de configuración que deb
 - [ ] Implementar envío de eventos capturados a un servidor
 - [ ] Crear interfaz de usuario que permita: elegir servidor para comunicarse y establecer identificación propia
 - [x] Implementar finalización de sesión de navegación por tiempo
-- [ ] Implementar cambio de iconos de extensión según estado de captura
+- [x] Implementar cambio de iconos de extensión según estado de captura
 - [ ] Implementar métodos de anonimización de información desde la extensión

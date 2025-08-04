@@ -18,7 +18,19 @@
     "https://example.com/*"
   ],
   "action": {
-    "default_popup": "popup.html"
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon-inactive-16.png",
+      "32": "icons/icon-inactive-32.png",
+      "48": "icons/icon-inactive-48.png",
+      "128": "icons/icon-inactive-128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon-inactive-16.png",
+    "32": "icons/icon-inactive-32.png",
+    "48": "icons/icon-inactive-48.png",
+    "128": "icons/icon-inactive-128.png"
   },
   "content_scripts": [
     {

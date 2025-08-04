@@ -1,6 +1,27 @@
 // Mantiene los datos de sesión de cada pestaña
 let sessionData = {};
 
+// Función para actualizar el icono de la extensión
+function updateIcon() {
+  const hasActiveSession = Object.keys(sessionData).length > 0;
+  console.log("Active sessions:", Object.keys(sessionData), "hasActiveSession:", hasActiveSession);
+  
+  const iconPath = hasActiveSession
+    ? {
+        "16": "icons/icon-active-16.png",
+        "32": "icons/icon-active-32.png",
+        "48": "icons/icon-active-48.png",
+        "128": "icons/icon-active-128.png",
+      }
+    : {
+        "16": "icons/icon-inactive-16.png",
+        "32": "icons/icon-inactive-32.png",
+        "48": "icons/icon-inactive-48.png",
+        "128": "icons/icon-inactive-128.png",
+      };
+  chrome.action.setIcon({ path: iconPath });
+}
+
 // Configuración de eventos
 const eventConfig = fetchEventConfig();
 
@@ -9,6 +30,9 @@ function createNewCaptureSession(tabId) {
   if (!eventConfig) return;
   console.log("Creating new capture session for tab", tabId);
   sessionData[tabId] = [];
+  
+  updateIcon();
+  
   chrome.tabs.sendMessage(
     tabId,
     { type: "captureMethods", config: eventConfig },
@@ -31,6 +55,8 @@ function endCaptureSession(tabId) {
   console.log("Ending capture session for tab", tabId);
   sendEventsToServer(tabId);
   delete sessionData[tabId];
+
+  updateIcon();
 }
 
 // Configura los métodos de captura de eventos en el content script
@@ -57,6 +83,9 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "event") {
     sessionData[sender.tab.id].push(message.event);
+  } else if (message.type === "captureEnded") {
+    console.log("Capture ended by timeout for tab", sender.tab.id);
+    endCaptureSession(sender.tab.id);
   }
 });
 

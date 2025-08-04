@@ -92,6 +92,9 @@ function captureMethods(eventConfig) {
 
     // Detener el timeout
     clearTimeout(timeoutId);
+
+    // Notificar al background script que la captura ha terminado
+    chrome.runtime.sendMessage({ type: "captureEnded" });
   }
 
   // Configurar el timeout para detener la captura
@@ -106,6 +109,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "captureMethods") {
     console.log("Event configuration received", message.config);
     captureMethods(message.config);
+    sendResponse({ success: true });
   }
-  return true;
 });
