@@ -105,7 +105,17 @@ function captureMethods(eventConfig) {
   }
 }
 
+function isHttpOrHttps(url) {
+  return url.startsWith("http://") || url.startsWith("https://");
+}
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (!isHttpOrHttps(window.location.href)) {
+    console.log("Content script ignoring non-HTTP/HTTPS page:", window.location.href);
+    sendResponse({ success: false, reason: "Non-HTTP/HTTPS page ignored" });
+    return;
+  }
+
   if (message.type === "captureMethods") {
     console.log("Event configuration received", message.config);
     captureMethods(message.config);

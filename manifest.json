@@ -13,8 +13,8 @@
     "service_worker": "background.js"
   },
   "host_permissions": [
-    "*://*/*",
-    "https://example.com/*"
+    "http://*/*",
+    "https://*/*"
   ],
   "action": {
     "default_popup": "popup.html",
@@ -34,7 +34,7 @@
   },
   "content_scripts": [
     {
-      "matches": ["*://*/*"],
+      "matches": ["http://*/*", "https://*/*"],
       "js": ["content_script.js"]
     }
   ]

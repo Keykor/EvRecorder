@@ -31,8 +31,6 @@ function createNewCaptureSession(tabId) {
   console.log("Creating new capture session for tab", tabId);
   sessionData[tabId] = [];
   
-  updateIcon();
-  
   chrome.tabs.sendMessage(
     tabId,
     { type: "captureMethods", config: eventConfig },
@@ -42,8 +40,11 @@ function createNewCaptureSession(tabId) {
           "Error sending event configuration to new session:",
           chrome.runtime.lastError.message,
         );
+        delete sessionData[tabId];
+        updateIcon();
       } else {
         console.log("Event configuration successfully sent", response);
+        updateIcon();
       }
     },
   );
@@ -55,7 +56,6 @@ function endCaptureSession(tabId) {
   console.log("Ending capture session for tab", tabId);
   sendEventsToServer(tabId);
   delete sessionData[tabId];
-
   updateIcon();
 }
 
@@ -72,9 +72,9 @@ chrome.tabs.onRemoved.addListener((tabId) => {
 });
 
 // Cuando se actualiza una pestaña, envía los eventos capturados al servidor y crea una nueva sesión
-chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === "complete") {
-    console.log("Tab updated:", tabId);
+    console.log("Tab updated:", tabId, "URL:", tab.url);
     endCaptureSession(tabId);
     createNewCaptureSession(tabId);
   }
