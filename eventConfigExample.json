@@ -1,8 +1,6 @@
 {
   "timeout": 10000,
-  "anonymization": {
-    "url": true
-  },
+  "url": true,
   "events": [
     {
       "type": "click",

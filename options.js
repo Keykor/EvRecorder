@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const saveButton = document.getElementById('saveConfig');
   const statusDiv = document.getElementById('status');
 
-  // Cargar configuración guardada
+  // Load saved configuration
   chrome.storage.sync.get(['serverUrl', 'userId'], function(result) {
     if (result.serverUrl) {
       serverUrlInput.value = result.serverUrl;
@@ -14,34 +14,34 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-  // Guardar configuración
+  // Save configuration
   saveButton.addEventListener('click', function() {
     const serverUrl = serverUrlInput.value.trim();
     const userId = userIdInput.value.trim();
 
     if (!serverUrl || !userId) {
-      showStatus('Por favor complete todos los campos', 'error');
+      showStatus('Please complete all fields', 'error');
       return;
     }
 
-    // Validar URL
+    // Validate URL
     try {
       new URL(serverUrl);
     } catch (e) {
-      showStatus('Por favor ingrese una URL válida', 'error');
+      showStatus('Please enter a valid URL', 'error');
       return;
     }
 
-    // Guardar en storage
+    // Save to storage
     chrome.storage.sync.set({
       serverUrl: serverUrl,
       userId: userId
     }, function() {
       if (chrome.runtime.lastError) {
-        showStatus('Error al guardar la configuración', 'error');
+        showStatus('Error saving configuration', 'error');
       } else {
-        showStatus('Configuración guardada exitosamente', 'success');
-        // Notificar al background script
+        showStatus('Configuration saved successfully', 'success');
+        // Notify background script
         chrome.runtime.sendMessage({ type: 'configUpdated' });
       }
     });

@@ -1,7 +1,7 @@
-// Mantiene los datos de sesión de cada pestaña
+// Maintains session data for each tab
 let sessionData = {};
 
-// Función para actualizar el icono de la extensión
+// Function to update the extension icon
 function updateIcon() {
   const hasActiveSession = Object.keys(sessionData).length > 0;
   console.log("Active sessions:", Object.keys(sessionData), "hasActiveSession:", hasActiveSession);
@@ -22,15 +22,15 @@ function updateIcon() {
   chrome.action.setIcon({ path: iconPath });
 }
 
-// Configuración de eventos
+// Event configuration
 let eventConfig = null;
 
-// Inicializar configuración al cargar la extensión
+// Initialize configuration when loading the extension
 fetchEventConfig().then(config => {
   eventConfig = config;
 });
 
-// Crea una nueva sesión de captura de eventos si hay una configuración de eventos
+// Create a new event capture session if there is an event configuration
 function createNewCaptureSession(tabId) {
   if (!eventConfig) return;
   console.log("Creating new capture session for tab", tabId);
@@ -55,7 +55,7 @@ function createNewCaptureSession(tabId) {
   );
 }
 
-// Finaliza la sesión de captura de eventos y envía los eventos capturados al servidor
+// End the event capture session and send captured events to the server
 function endCaptureSession(tabId) {
   if (!sessionData[tabId]) return;
   console.log("Ending capture session for tab", tabId);
@@ -64,19 +64,19 @@ function endCaptureSession(tabId) {
   updateIcon();
 }
 
-// Configura los métodos de captura de eventos en el content script
+// Configure event capture methods in the content script
 chrome.tabs.onCreated.addListener(async (tab) => {
   console.log("Tab created:", tab);
   createNewCaptureSession(tab.id);
 });
 
-// Cuando se cierra una pestaña, envía los eventos capturados al servidor
+// When a tab is closed, send captured events to the server
 chrome.tabs.onRemoved.addListener((tabId) => {
   console.log("Tab removed:", tabId);
   endCaptureSession(tabId);
 });
 
-// Cuando se actualiza una pestaña, envía los eventos capturados al servidor y crea una nueva sesión
+// When a tab is updated, send captured events to the server and create a new session
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === "complete") {
     console.log("Tab updated:", tabId, "URL:", tab.url);
@@ -99,9 +99,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   return true; // Keep message channel open for async response
 });
 
-// ------------------ Funciones de comunicación con servidores ------------------
+// ------------------ Server communication functions ------------------
 
-// Obtiene la configuración de eventos desde el servidor
+// Get event configuration from the server
 /*
 async function fetchEventConfig() {
     try {
@@ -116,7 +116,7 @@ async function fetchEventConfig() {
     }
 }
 
-// Envía los eventos capturados al servidor
+// Send captured events to the server
 function sendEventsToServer(tabId) {
     fetch('https://example.com/send-events', {
         method: 'POST',
@@ -129,7 +129,7 @@ function sendEventsToServer(tabId) {
 }
 */
 
-// ------------------ Funciones de prueba ------------------
+// ------------------ Test functions ------------------
 
 function fetchEventConfig() {
   console.log("Fetching event configuration from file");

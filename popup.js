@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const userId = userIdInput.value.trim();
 
       if (!serverUrl || !userId) {
-        showStatus('Por favor complete todos los campos', 'error');
+        showStatus('Please complete all fields', 'error');
         return;
       }
 
@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', function() {
       try {
         new URL(serverUrl);
       } catch (e) {
-        showStatus('Por favor ingrese una URL válida', 'error');
+        showStatus('Please enter a valid URL', 'error');
         return;
       }
 
@@ -55,9 +55,9 @@ document.addEventListener('DOMContentLoaded', function() {
         userId: userId
       }, function() {
         if (chrome.runtime.lastError) {
-          showStatus('Error al guardar la configuración', 'error');
+          showStatus('Error saving configuration', 'error');
         } else {
-          showStatus('Configuración guardada exitosamente', 'success');
+          showStatus('Configuration saved successfully', 'success');
           // Notify background script
           chrome.runtime.sendMessage({ type: 'configUpdated' });
           // Update status display
@@ -73,7 +73,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const isConfigured = result.serverUrl && result.userId;
       
       if (configStatusElement) {
-        configStatusElement.textContent = isConfigured ? 'Configurado' : 'No configurado';
+        configStatusElement.textContent = isConfigured ? 'Configured' : 'Not configured';
         configStatusElement.className = isConfigured ? 'status-value status-configured' : 'status-value status-not-configured';
       }
     });
@@ -89,12 +89,12 @@ document.addEventListener('DOMContentLoaded', function() {
       const isCapturing = sessionCount > 0;
       
       if (captureStatusElement) {
-        captureStatusElement.textContent = isCapturing ? 'Capturando' : 'Detenido';
+        captureStatusElement.textContent = isCapturing ? 'Capturing' : 'Stopped';
         captureStatusElement.className = isCapturing ? 'status-value status-capturing' : 'status-value status-stopped';
       }
       
       if (sessionsCountElement) {
-        sessionsCountElement.textContent = `Sesiones activas: ${sessionCount}`;
+        sessionsCountElement.textContent = `Active sessions: ${sessionCount}`;
       }
     });
   }

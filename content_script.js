@@ -1,26 +1,18 @@
-// Variable global para configuración de anonimización (simplificada)
-let browserAnonymization = {};
-
-// Función que captura los eventos y los envía al background.js
+// Function that captures events and sends them to background.js
 function captureMethods(eventConfig) {
-  // Actualizar configuración de anonimización si viene en eventConfig
-  if (eventConfig.anonymization) {
-    browserAnonymization = { ...browserAnonymization, ...eventConfig.anonymization };
-  }
-
   let eventListeners = [];
 
-  // Guarda el evento en un array y lo envía al background.js
+  // Save the event in an array and send it to background.js
   function captureEvent(eventType, attributes, eventData, anonymization) {
     console.log("Capturing event", eventType);
 
     let capturedData = {};
 
-    // Guardar el tipo de evento
+    // Save the event type
     capturedData.type = eventType;
     capturedData.attributes = {};
 
-    // Guardar los atributos del evento que se encuentran en la configuración
+    // Save the event attributes that are found in the configuration
     if (attributes) {
       attributes.forEach((attribute) => {
         let value = eventData[attribute];
@@ -33,10 +25,10 @@ function captureMethods(eventConfig) {
       });
     }
 
-    // Añade el timestamp del evento
+    // Add event timestamp
     capturedData.timestamp = new Date().getTime();
 
-    // Añade información del navegador
+    // Add browser information
     capturedData.browser = {};
     capturedData.browser.windowWidth = window.innerWidth;
     capturedData.browser.windowHeight = window.innerHeight;
@@ -45,12 +37,10 @@ function captureMethods(eventConfig) {
     capturedData.browser.scrollX = window.scrollX || 0;
     capturedData.browser.scrollY = window.scrollY || 0;
 
-    capturedData.browser.url = anonymizers.browser.url(window.location.href, browserAnonymization);
-
     chrome.runtime.sendMessage({ type: "event", event: capturedData });
   }
 
-  // Configura el polling de eventos
+  // Configure event polling
   let lastEvent = {};
   let pollingIntervals = [];
   function configurePolling(eventName, pollingInterval, attributes, anonymization) {
@@ -65,18 +55,18 @@ function captureMethods(eventConfig) {
 
     const intervalID = setInterval(() => {
       if (lastEvent[eventName]) {
-        // Enviar el último evento capturado
+        // Send the last captured event
         captureEvent(eventName, attributes, lastEvent[eventName], anonymization);
-        // Reiniciar el evento
+        // Reset the event
         lastEvent[eventName] = null;
       }
     }, pollingInterval || 1000);
 
-    // Guardar el intervalID para poder limpiarlo después
+    // Save the intervalID to be able to clear it later
     pollingIntervals.push(intervalID);
   }
 
-  // Configura la captura de cada evento en la configuración
+  // Configure capture for each event in the configuration
   eventConfig.events.forEach((event) => {
     if (!event.polling) {
       const eventHandler = (e) => {
@@ -89,29 +79,29 @@ function captureMethods(eventConfig) {
     }
   });
 
-  // Guardar el timeoutID para poder deternerlo después
+  // Save the timeoutID to be able to stop it later
   let timeoutId;
 
-  // Detener la captura de eventos, listeners e intervalos
+  // Stop event capturing, listeners and intervals
   function stopCapturing() {
     console.log("Stopping event capturing...");
 
-    // Eliminar todos los event listeners
+    // Remove all event listeners
     eventListeners.forEach(({ eventName, handler }) => {
       document.removeEventListener(eventName, handler, true);
     });
 
-    // Detener todos los intervalos de polling
+    // Stop all polling intervals
     pollingIntervals.forEach(clearInterval);
 
-    // Detener el timeout
+    // Stop the timeout
     clearTimeout(timeoutId);
 
-    // Notificar al background script que la captura ha terminado
+    // Notify background script that capture has ended
     chrome.runtime.sendMessage({ type: "captureEnded" });
   }
 
-  // Configurar el timeout para detener la captura
+  // Configure timeout to stop capture
   if (eventConfig.timeout) {
     timeoutId = setTimeout(() => {
       stopCapturing();

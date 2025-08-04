@@ -1,4 +1,4 @@
-// Utilidades de generación aleatoria
+// Random generation utilities
 const randomGenerators = {
   letter: () => {
     const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
@@ -10,23 +10,23 @@ const randomGenerators = {
   },
 };
 
-// Anonimizadores por tipo de evento
+// Anonymizers by event type
 const anonymizers = {
   keyboard: {
     key: (key, config) => {
       if (!config.key) return key;
       
-      // Anonimizar letras individuales con letras aleatorias
+      // Anonymize individual letters with random letters
       if (/^[a-zA-Z]$/.test(key)) {
         return randomGenerators.letter();
       }
       
-      // Anonimizar números individuales con números aleatorios
+      // Anonymize individual numbers with random numbers
       if (/^[0-9]$/.test(key)) {
         return randomGenerators.number();
       }
       
-      // Todo lo demás se mantiene sin cambios (teclas especiales, combinaciones, etc.)
+      // Everything else remains unchanged (special keys, combinations, etc.)
       return key;
     },
     code: (code, config) => {
@@ -42,20 +42,13 @@ const anonymizers = {
   },
 
   mouse: {
-    // Aquí se pueden agregar anonimizadores para eventos de mouse
+    // Mouse event anonymizers can be added here
   },
-
-  browser: {
-    url: (url, config) => {
-      if (!config.url) return url;
-      return "https://anonymized.com";
-    }
-  }
 };
 
-// Función principal de anonimización
+// Main anonymization function
 function anonymizeEventValue(eventType, attribute, value, anonymizationConfig) {
-  // Mapear tipos de evento a categorías de anonimización
+  // Map event types to anonymization categories
   const eventTypeMapping = {
     'keydown': 'keyboard',
     'keyup': 'keyboard',
@@ -75,7 +68,7 @@ function anonymizeEventValue(eventType, attribute, value, anonymizationConfig) {
   return value;
 };
 
-// Exportar para uso en content_script.js
+// Export for use in content_script.js
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { anonymizeEventValue, anonymizers, randomGenerators };
 }
