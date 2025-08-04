@@ -86,7 +86,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   } else if (message.type === "captureEnded") {
     console.log("Capture ended by timeout for tab", sender.tab.id);
     endCaptureSession(sender.tab.id);
+  } else if (message.type === "getSessionCount") {
+    sendResponse({ count: Object.keys(sessionData).length });
+  } else if (message.type === "configUpdated") {
+    console.log("Configuration updated");
   }
+  return true; // Keep message channel open for async response
 });
 
 // ------------------ Funciones de comunicación con servidores ------------------
