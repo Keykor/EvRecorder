@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Event Capture Extension",
   "version": "1.0",
-  "description": "Captura eventos de una sesión de navegación y los envía a un servidor",
+  "description": "Capture and anonymize user events on web pages.",
   "permissions": [
     "tabs",
     "scripting",

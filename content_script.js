@@ -10,7 +10,6 @@ function captureMethods(eventConfig) {
 
     // Save the event type
     capturedData.type = eventType;
-    capturedData.attributes = {};
 
     // Save the event attributes that are found in the configuration
     if (attributes) {
@@ -20,7 +19,7 @@ function captureMethods(eventConfig) {
           if (anonymization && anonymization[attribute]) {
             value = anonymizeEventValue(eventType, attribute, value, anonymization);
           }
-          capturedData.attributes[attribute] = value;
+          capturedData[attribute] = value;
         }
       });
     }
@@ -28,14 +27,13 @@ function captureMethods(eventConfig) {
     // Add event timestamp
     capturedData.timestamp = new Date().getTime();
 
-    // Add browser information
-    capturedData.browser = {};
-    capturedData.browser.windowWidth = window.innerWidth;
-    capturedData.browser.windowHeight = window.innerHeight;
-    capturedData.browser.viewportWidth = document.documentElement.clientWidth;
-    capturedData.browser.viewportHeight = document.documentElement.clientHeight;
-    capturedData.browser.scrollX = window.scrollX || 0;
-    capturedData.browser.scrollY = window.scrollY || 0;
+    // Add browser information directly to the event object
+    capturedData.windowWidth = window.innerWidth;
+    capturedData.windowHeight = window.innerHeight;
+    capturedData.viewportWidth = document.documentElement.clientWidth;
+    capturedData.viewportHeight = document.documentElement.clientHeight;
+    capturedData.scrollX = window.scrollX || 0;
+    capturedData.scrollY = window.scrollY || 0;
 
     chrome.runtime.sendMessage({ type: "event", event: capturedData });
   }

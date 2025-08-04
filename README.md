@@ -6,7 +6,7 @@ Browser extension that captures user interaction events during web browsing sess
 - Real-time event capturing (clicks, scrolls, keystrokes, mouse movements)
 - Configurable event types and attributes
 - URL and keystroke anonymization
-- Session-based data collection
+- Session-based data collection with user-configured ID
 - User-friendly configuration interface
 - Real-time status monitoring
 
@@ -17,7 +17,7 @@ Events are configured through a JSON file with the following structure:
 ```json
 {
   "timeout": 10000,
-  "url": true,
+  "url": false,
   "events": [
     {
       "type": "click",
@@ -39,7 +39,7 @@ Events are configured through a JSON file with the following structure:
 
 ### Configuration Options
 - **timeout**: Capture duration in milliseconds
-- **url**: Enable URL capture
+- **url**: Enable URL anonymization (true = anonymize, false = capture full URL)
 - **events**: Array of event configurations
   - **type**: Event type (`click`, `scroll`, `keydown`, `mousemove`)
   - **polling**: Use polling (true) or event listeners (false)
@@ -49,12 +49,11 @@ Events are configured through a JSON file with the following structure:
 
 ## Captured Data
 
-Each session returns structured data:
+Each session returns structured data with user-configured ID:
 
 ```json
 {
-  "userId": "unique-user",
-  "sessionId": "unique-session-identifier",
+  "userId": "user-configured-id",
   "tabId": 123,
   "url": "https://example.com",
   "startTime": 1640995200000,
@@ -77,22 +76,24 @@ Each session returns structured data:
 1. Enable Developer mode in Chrome (`chrome://extensions/`)
 2. Click "Load unpacked" and select the extension directory
 3. Click the extension icon and select "Configurar Extensión"
-4. Enter server URL and user ID, then save
+4. Enter server URL and your user ID, then save
 5. Visit any website to start capturing events
 
 ## User Interface
 
 - **Popup**: Shows capture status and active sessions
-- **Options Page**: Configure server URL and user ID
+- **Options Page**: Configure server URL and user-provided ID
 
 ## How It Works
 
-1. Extension automatically starts capturing when tabs are created/updated
-2. Events are captured based on configuration settings
-3. Data is stored per session and sent to server when session ends
-4. Extension icon indicates active capture status
+1. Extension uses your configured user ID for all sessions
+2. Extension automatically starts capturing when tabs are created/updated
+3. Events are captured based on configuration settings
+4. Data is stored per session and sent to server when session ends
+5. Extension icon indicates active capture status
 
 ## Anonymization
 
+- **URLs**: URLs can be hidden
 - **Keystrokes**: Individual letters and numbers are randomized
 - **Configurable**: Set per event type and attribute

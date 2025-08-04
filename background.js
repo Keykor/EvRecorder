@@ -1,6 +1,12 @@
 // Maintains session data for each tab
 let sessionData = {};
 
+// Anonymize URL if configured
+function anonymizeUrl(url, shouldAnonymize) {
+  if (!shouldAnonymize) return url;
+  return '[anonymized-url]';
+}
+
 // Function to update the extension icon
 function updateIcon() {
   const hasActiveSession = Object.keys(sessionData).length > 0;
@@ -34,31 +40,61 @@ fetchEventConfig().then(config => {
 function createNewCaptureSession(tabId) {
   if (!eventConfig) return;
   console.log("Creating new capture session for tab", tabId);
-  sessionData[tabId] = [];
   
-  chrome.tabs.sendMessage(
-    tabId,
-    { type: "captureMethods", config: eventConfig },
-    (response) => {
+  // Get stored user ID and tab information
+  chrome.storage.sync.get(['userId'], (result) => {
+    if (!result.userId) {
+      console.error("No user ID configured");
+      return;
+    }
+    
+    chrome.tabs.get(tabId, (tab) => {
       if (chrome.runtime.lastError) {
-        console.error(
-          "Error sending event configuration to new session:",
-          chrome.runtime.lastError.message,
-        );
-        delete sessionData[tabId];
-        updateIcon();
-      } else {
-        console.log("Event configuration successfully sent", response);
-        updateIcon();
+        console.error("Error getting tab info:", chrome.runtime.lastError.message);
+        return;
       }
-    },
-  );
+      
+      // Apply URL anonymization if configured
+      const finalUrl = anonymizeUrl(tab.url, eventConfig.url);
+      
+      sessionData[tabId] = {
+        userId: result.userId,
+        tabId: tabId,
+        url: finalUrl,
+        startTime: Date.now(),
+        endTime: null,
+        events: []
+      };
+      
+      chrome.tabs.sendMessage(
+        tabId,
+        { type: "captureMethods", config: eventConfig },
+        (response) => {
+          if (chrome.runtime.lastError) {
+            console.error(
+              "Error sending event configuration to new session:",
+              chrome.runtime.lastError.message,
+            );
+            delete sessionData[tabId];
+            updateIcon();
+          } else {
+            console.log("Event configuration successfully sent", response);
+            updateIcon();
+          }
+        },
+      );
+    });
+  });
 }
 
 // End the event capture session and send captured events to the server
 function endCaptureSession(tabId) {
   if (!sessionData[tabId]) return;
   console.log("Ending capture session for tab", tabId);
+  
+  // Set end time
+  sessionData[tabId].endTime = Date.now();
+  
   sendEventsToServer(tabId);
   delete sessionData[tabId];
   updateIcon();
@@ -87,7 +123,9 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "event") {
-    sessionData[sender.tab.id].push(message.event);
+    if (sessionData[sender.tab.id]) {
+      sessionData[sender.tab.id].events.push(message.event);
+    }
   } else if (message.type === "captureEnded") {
     console.log("Capture ended by timeout for tab", sender.tab.id);
     endCaptureSession(sender.tab.id);
@@ -146,5 +184,8 @@ function fetchEventConfig() {
 }
 
 function sendEventsToServer(tabId) {
-  console.log("Sending events to server:", sessionData[tabId]);
+  const sessionInfo = sessionData[tabId];
+  if (!sessionInfo) return;
+  
+  console.log("Sending events to server:", sessionInfo);
 }
