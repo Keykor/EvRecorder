@@ -23,7 +23,12 @@ function updateIcon() {
 }
 
 // Configuración de eventos
-const eventConfig = fetchEventConfig();
+let eventConfig = null;
+
+// Inicializar configuración al cargar la extensión
+fetchEventConfig().then(config => {
+  eventConfig = config;
+});
 
 // Crea una nueva sesión de captura de eventos si hay una configuración de eventos
 function createNewCaptureSession(tabId) {
@@ -127,33 +132,17 @@ function sendEventsToServer(tabId) {
 // ------------------ Funciones de prueba ------------------
 
 function fetchEventConfig() {
-  console.log("Fetching event configuration from server");
-  return {
-    timeout: 10000,
-    events: [
-      {
-        type: "click",
-        polling: false,
-        attributes: ["clientX", "clientY"],
-      },
-      {
-        type: "scroll",
-        polling: true,
-        interval: 100,
-      },
-      {
-        type: "keydown",
-        polling: false,
-        attributes: ["key", "code"],
-      },
-      {
-        type: "mousemove",
-        polling: true,
-        interval: 100,
-        attributes: ["screenX", "screenY"],
-      },
-    ],
-  };
+  console.log("Fetching event configuration from file");
+  return fetch(chrome.runtime.getURL('eventConfigExample.json'))
+    .then(response => response.json())
+    .then(config => {
+      console.log("Event config loaded:", config);
+      return config;
+    })
+    .catch(error => {
+      console.error("Error loading event config:", error);
+      return null;
+    });
 }
 
 function sendEventsToServer(tabId) {

@@ -1,5 +1,8 @@
 {
   "timeout": 10000,
+  "anonymization": {
+    "url": true
+  },
   "events": [
     {
       "type": "click",
@@ -14,7 +17,11 @@
     {
       "type": "keydown",
       "polling": false,
-      "attributes": ["key", "code"]
+      "attributes": ["key", "code"],
+      "anonymization": {
+        "key": true,
+        "code": true
+      }
     },
     {
       "type": "mousemove",

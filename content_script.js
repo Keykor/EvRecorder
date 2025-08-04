@@ -1,9 +1,17 @@
+// Variable global para configuración de anonimización (simplificada)
+let browserAnonymization = {};
+
 // Función que captura los eventos y los envía al background.js
 function captureMethods(eventConfig) {
+  // Actualizar configuración de anonimización si viene en eventConfig
+  if (eventConfig.anonymization) {
+    browserAnonymization = { ...browserAnonymization, ...eventConfig.anonymization };
+  }
+
   let eventListeners = [];
 
   // Guarda el evento en un array y lo envía al background.js
-  function captureEvent(eventType, attributes, eventData) {
+  function captureEvent(eventType, attributes, eventData, anonymization) {
     console.log("Capturing event", eventType);
 
     let capturedData = {};
@@ -15,8 +23,12 @@ function captureMethods(eventConfig) {
     // Guardar los atributos del evento que se encuentran en la configuración
     if (attributes) {
       attributes.forEach((attribute) => {
-        if (eventData[attribute]) {
-          capturedData.attributes[attribute] = eventData[attribute];
+        let value = eventData[attribute];
+        if (value) {
+          if (anonymization && anonymization[attribute]) {
+            value = anonymizeEventValue(eventType, attribute, value, anonymization);
+          }
+          capturedData.attributes[attribute] = value;
         }
       });
     }
@@ -33,13 +45,15 @@ function captureMethods(eventConfig) {
     capturedData.browser.scrollX = window.scrollX || 0;
     capturedData.browser.scrollY = window.scrollY || 0;
 
+    capturedData.browser.url = anonymizers.browser.url(window.location.href, browserAnonymization);
+
     chrome.runtime.sendMessage({ type: "event", event: capturedData });
   }
 
   // Configura el polling de eventos
   let lastEvent = {};
   let pollingIntervals = [];
-  function configurePolling(eventName, pollingInterval, attributes) {
+  function configurePolling(eventName, pollingInterval, attributes, anonymization) {
     lastEvent[eventName] = null;
 
     const eventHandler = (e) => {
@@ -52,7 +66,7 @@ function captureMethods(eventConfig) {
     const intervalID = setInterval(() => {
       if (lastEvent[eventName]) {
         // Enviar el último evento capturado
-        captureEvent(eventName, attributes, lastEvent[eventName]);
+        captureEvent(eventName, attributes, lastEvent[eventName], anonymization);
         // Reiniciar el evento
         lastEvent[eventName] = null;
       }
@@ -66,12 +80,12 @@ function captureMethods(eventConfig) {
   eventConfig.events.forEach((event) => {
     if (!event.polling) {
       const eventHandler = (e) => {
-        captureEvent(event.type, event.attributes, e);
+        captureEvent(event.type, event.attributes, e, event.anonymization);
       };
       document.addEventListener(event.type, eventHandler, true);
       eventListeners.push({ eventName: event.type, handler: eventHandler });
     } else {
-      configurePolling(event.type, event.interval, event.attributes);
+      configurePolling(event.type, event.interval, event.attributes, event.anonymization);
     }
   });
 
