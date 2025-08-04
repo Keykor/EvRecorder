@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body {
+      width: 300px;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .header h2 {
+      margin: 0;
+      color: #333;
+      font-size: 18px;
+    }
+    .status-section {
+      background-color: #f8f9fa;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 15px;
+      border: 1px solid #e9ecef;
+    }
+    .status-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .status-item:last-child {
+      margin-bottom: 0;
+    }
+    .status-label {
+      font-weight: bold;
+      color: #555;
+    }
+    .status-value {
+      font-weight: bold;
+    }
+    .status-capturing {
+      color: #28a745;
+    }
+    .status-stopped {
+      color: #dc3545;
+    }
+    .status-configured {
+      color: #28a745;
+    }
+    .status-not-configured {
+      color: #ffc107;
+    }
+    .configure-button {
+      background-color: #007bff;
+      color: white;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      width: 100%;
+      font-size: 14px;
+      font-weight: bold;
+    }
+    .configure-button:hover {
+      background-color: #0056b3;
+    }
+    .sessions-count {
+      font-size: 12px;
+      color: #666;
+      text-align: center;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h2>Event Capture Extension</h2>
+  </div>
+  
+  <div class="status-section">
+    <div class="status-item">
+      <span class="status-label">Estado:</span>
+      <span class="status-value" id="captureStatus">Detenido</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">Configuración:</span>
+      <span class="status-value" id="configStatus">No configurado</span>
+    </div>
+  </div>
+  
+  <button id="configureButton" class="configure-button">Configurar Extensión</button>
+  
+  <div class="sessions-count" id="sessionsCount"></div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>

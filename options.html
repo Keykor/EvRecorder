@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Event Capture Extension - Configuración</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 40px auto;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    .container {
+      background-color: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+      color: #555;
+    }
+    input[type="text"], input[type="url"] {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      box-sizing: border-box;
+      font-size: 14px;
+    }
+    input:focus {
+      outline: none;
+      border-color: #4CAF50;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 12px 30px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-top: 10px;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    .status {
+      margin-top: 20px;
+      padding: 12px;
+      border-radius: 6px;
+      text-align: center;
+      font-weight: bold;
+    }
+    .status.success {
+      background-color: #d4edda;
+      color: #155724;
+      border: 2px solid #c3e6cb;
+    }
+    .status.error {
+      background-color: #f8d7da;
+      color: #721c24;
+      border: 2px solid #f5c6cb;
+    }
+    .info {
+      background-color: #e7f3ff;
+      border: 1px solid #b3d7ff;
+      border-radius: 6px;
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+    .info h3 {
+      margin-top: 0;
+      color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Configuración de Event Capture Extension</h1>
+    
+    <div class="info">
+      <h3>Información</h3>
+      <p>Configure la URL del servidor y su identificador de usuario para comenzar a capturar eventos.</p>
+    </div>
+    
+    <div class="form-group">
+      <label for="serverUrl">URL del Servidor:</label>
+      <input type="url" id="serverUrl" placeholder="https://ejemplo.com" required>
+    </div>
+    
+    <div class="form-group">
+      <label for="userId">ID de Usuario:</label>
+      <input type="text" id="userId" placeholder="Ingrese su identificador único" required>
+    </div>
+    
+    <button id="saveConfig">Guardar Configuración</button>
+    
+    <div id="status" class="status" style="display: none;"></div>
+  </div>
+  
+  <script src="options.js"></script>
+</body>
+</html>
