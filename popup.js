@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const captureStatusElement = document.getElementById('captureStatus');
   const configStatusElement = document.getElementById('configStatus');
   const sessionsCountElement = document.getElementById('sessionsCount');
+  const headerIcon = document.getElementById('headerIcon');
 
   // Initialize status display
   updateStatus();
@@ -91,6 +92,12 @@ document.addEventListener('DOMContentLoaded', function() {
       if (captureStatusElement) {
         captureStatusElement.textContent = isCapturing ? 'Capturing' : 'Stopped';
         captureStatusElement.className = isCapturing ? 'status-value status-capturing' : 'status-value status-stopped';
+      }
+      
+      // Update header icon based on capture status
+      if (headerIcon) {
+        headerIcon.src = isCapturing ? 'icons/icon-active-48.png' : 'icons/icon-inactive-48.png';
+        headerIcon.alt = isCapturing ? 'EvRecorder - Capturing' : 'EvRecorder - Stopped';
       }
       
       if (sessionsCountElement) {

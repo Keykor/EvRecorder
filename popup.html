@@ -11,11 +11,22 @@
     .header {
       text-align: center;
       margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+      padding: 10px 0;
     }
     .header h2 {
       margin: 0;
       color: #333;
       font-size: 18px;
+    }
+    .header-icon {
+      width: 48px;
+      height: 48px;
+      transition: opacity 0.3s ease;
+      object-fit: contain;
     }
     .status-section {
       background-color: #f8f9fa;
@@ -76,7 +87,8 @@
 </head>
 <body>
   <div class="header">
-    <h2>EvRecord</h2>
+    <img id="headerIcon" class="header-icon" src="icons/icon-inactive-48.png" alt="EvRecorder">
+    <h2>EvRecorder</h2>
   </div>
   
   <div class="status-section">

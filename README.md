@@ -1,16 +1,38 @@
-# EvRecord
+# EvRecorder 🎯
 
-Browser extension that captures user interaction events during web browsing sessions for research and analysis purposes.
+<div align="center">
+  <img src="icons/icon-active-128.png" alt="EvRecorder Active" width="128" height="128">
+  <br>
+  <strong>Browser extension for capturing user interaction events</strong>
+</div>
 
-## Features
-- Real-time event capturing (clicks, scrolls, keystrokes, mouse movements)
-- Configurable event types and attributes
-- URL and keystroke anonymization
-- Session-based data collection with user-configured ID
-- User-friendly configuration interface
-- Real-time status monitoring
+---
 
-## Configuration
+## ✨ Features
+- 🎯 Real-time event capturing (clicks, scrolls, keystrokes, mouse movements)
+- 🔒 URL and keystroke anonymization
+- ⚙️ Configurable event types and attributes
+- 📊 Session-based data collection
+- 📈 Visual status indicators
+
+## 🎨 Extension States
+
+<table align="center">
+  <tr>
+    <td align="center">
+      <img src="icons/icon-inactive-48.png" alt="Inactive" width="48" height="48"><br>
+      <strong>Inactive</strong><br>
+      Not capturing
+    </td>
+    <td align="center">
+      <img src="icons/icon-active-48.png" alt="Active" width="48" height="48"><br>
+      <strong>Active</strong><br>
+      Capturing events
+    </td>
+  </tr>
+</table>
+
+## 🔧 Configuration
 
 Events are configured through a JSON file with the following structure:
 
@@ -38,18 +60,17 @@ Events are configured through a JSON file with the following structure:
 ```
 
 ### Configuration Options
-- **timeout**: Capture duration in milliseconds
-- **url**: Enable URL anonymization (true = anonymize, false = capture full URL)
-- **events**: Array of event configurations
-  - **type**: Event type (`click`, `scroll`, `keydown`, `mousemove`)
-  - **polling**: Use polling (true) or event listeners (false)
-  - **interval**: Polling interval (when polling: true)
-  - **attributes**: Event properties to capture
-  - **anonymization**: Specify which attributes to anonymize
+- **timeout**: ⏱️ Capture duration (milliseconds)
+- **url**: 🔒 Enable URL anonymization
+- **events**: 📋 Event configurations
+  - **type**: 🎯 Event type (`click`, `scroll`, `keydown`, `mousemove`)
+  - **polling**: 🔄 Use polling or event listeners
+  - **attributes**: 📝 Properties to capture
+  - **anonymization**: 🛡️ Attributes to anonymize
 
-## Captured Data
+## 📊 Captured Data
 
-Each session returns structured data with user-configured ID:
+Session data structure:
 
 ```json
 {
@@ -63,37 +84,34 @@ Each session returns structured data with user-configured ID:
       "type": "click",
       "timestamp": 1640995201500,
       "clientX": 150,
-      "clientY": 200,
-      "windowWidth": 1920,
-      "windowHeight": 1080,
+      "clientY": 200
     }
   ]
 }
 ```
 
-## Installation
+## 📦 Installation
 
-1. Enable Developer mode in Chrome (`chrome://extensions/`)
-2. Click "Load unpacked" and select the extension directory
-3. Click the extension icon and select "Configurar Extensión"
-4. Enter server URL and your user ID, then save
-5. Visit any website to start capturing events
+1. 🔧 Enable Developer mode in Chrome (`chrome://extensions/`)
+2. 📁 Load unpacked extension
+3. ⚙️ Configure server URL and user ID
+4. 🌐 Start browsing to capture events
 
-## User Interface
+## 🖥️ Example Server
 
-- **Popup**: Shows capture status and active sessions
-- **Options Page**: Configure server URL and user-provided ID
+Use our server implementation: **🔗 [EvRecorder-Server](https://github.com/Keykor/EvRecorder-Server)**
 
-## How It Works
+Includes API documentation, examples, and setup instructions.
 
-1. Extension uses your configured user ID for all sessions
-2. Extension automatically starts capturing when tabs are created/updated
-3. Events are captured based on configuration settings
-4. Data is stored per session and sent to server when session ends
-5. Extension icon indicates active capture status
+## ⚡ How It Works
 
-## Anonymization
+1. 🆔 Configure user ID and server URL
+2. 🚀 Extension captures events automatically  
+3.  Data sent to server when session ends
+4. 🎯 Icon shows capture status
 
-- **URLs**: URLs can be hidden
-- **Keystrokes**: Individual letters and numbers are randomized
-- **Configurable**: Set per event type and attribute
+## 🔒 Anonymization
+
+- 🌐 **URLs**: Can be hidden
+- ⌨️ **Keystrokes**: Randomized letters/numbers
+- ⚙️ **Configurable**: Per event type
