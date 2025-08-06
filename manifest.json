@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Event Capture Extension",
+  "name": "EvRecord",
   "version": "1.0",
-  "description": "Capture and anonymize user events on web pages.",
+  "description": "EvRecord - Capture and anonymize user events on web pages.",
   "permissions": [
     "tabs",
     "scripting",

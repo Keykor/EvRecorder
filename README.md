@@ -1,4 +1,4 @@
-# Event Capture Extension
+# EvRecord
 
 Browser extension that captures user interaction events during web browsing sessions for research and analysis purposes.
 
