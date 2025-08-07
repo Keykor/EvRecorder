@@ -1,13 +1,28 @@
+// Debug logging functionality
+let debugMode = false;
+
+// Initialize debug mode from storage
+chrome.storage.sync.get(['debugMode'], function(result) {
+  debugMode = result.debugMode || false;
+});
+
+// Conditional logging function
+function debugLog(...args) {
+  if (debugMode) {
+    console.log('[EvRecorder Debug]', ...args);
+  }
+}
+
 // Function that captures events and sends them to background.js
 function captureMethods(eventConfig) {
   // Validate that eventConfig exists and has events array
   if (!eventConfig) {
-    console.error("No event configuration provided");
+    debugLog("No event configuration provided");
     return;
   }
   
   if (!eventConfig.events || !Array.isArray(eventConfig.events)) {
-    console.error("Invalid event configuration: events array is missing or invalid", eventConfig);
+    debugLog("Invalid event configuration: events array is missing or invalid", eventConfig);
     return;
   }
   
@@ -15,7 +30,7 @@ function captureMethods(eventConfig) {
 
   // Save the event in an array and send it to background.js
   function captureEvent(eventType, attributes, eventData, anonymization) {
-    console.log("Capturing event", eventType);
+    debugLog("Capturing event", eventType);
 
     let capturedData = {};
 
@@ -93,7 +108,7 @@ function captureMethods(eventConfig) {
 
   // Stop event capturing, listeners and intervals
   function stopCapturing() {
-    console.log("Stopping event capturing...");
+    debugLog("Stopping event capturing...");
 
     // Remove all event listeners
     eventListeners.forEach(({ eventName, handler }) => {
@@ -123,17 +138,22 @@ function isHttpOrHttps(url) {
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'debugModeChanged') {
+    debugMode = message.debugMode;
+    return;
+  }
+
   if (!isHttpOrHttps(window.location.href)) {
-    console.log("Content script ignoring non-HTTP/HTTPS page:", window.location.href);
+    debugLog("Content script ignoring non-HTTP/HTTPS page:", window.location.href);
     sendResponse({ success: false, reason: "Non-HTTP/HTTPS page ignored" });
     return;
   }
 
   if (message.type === "captureMethods") {
-    console.log("Event configuration received", message.config);
+    debugLog("Event configuration received", message.config);
     
     if (!message.config) {
-      console.error("No configuration provided in message");
+      debugLog("No configuration provided in message");
       sendResponse({ success: false, reason: "No configuration provided" });
       return;
     }

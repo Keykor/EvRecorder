@@ -48,10 +48,8 @@ async function createNewCaptureSession(tabId) {
     console.log("No valid event configuration available, session creation skipped for tab", tabId);
     return;
   }
-  
-  console.log("Creating new capture session for tab", tabId);
-  
-  // Get stored user ID and tab information
+
+  console.log("Creating new capture session for tab", tabId);  // Get stored user ID and tab information
   chrome.storage.sync.get(['userId'], (result) => {
     if (!result.userId) {
       console.error("No user ID configured");
@@ -152,6 +150,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       eventConfig = config;
       console.log("Event configuration reloaded:", config);
     });
+  } else if (message.type === "debugModeChanged") {
+    // Notify all tabs about debug mode change
+    chrome.tabs.query({}, (tabs) => {
+      tabs.forEach((tab) => {
+        chrome.tabs.sendMessage(tab.id, { type: "debugModeChanged", debugMode: message.debugMode });
+      });
+    });
   }
   return true; // Keep message channel open for async response
 });
@@ -227,6 +232,6 @@ async function sendEventsToServer(tabId) {
         }
     } catch (error) {
         console.error('Error sending events to server:', error);
-        console.log('Session data that failed to send:', sessionInfo);
+        console.error('Session data that failed to send:', sessionInfo);
     }
 }

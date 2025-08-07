@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const serverUrlInput = document.getElementById('serverUrl');
   const userIdInput = document.getElementById('userId');
   const saveButton = document.getElementById('saveConfig');
+  const debugButton = document.getElementById('debugButton');
   const statusDiv = document.getElementById('status');
 
   // Load saved configuration
@@ -13,6 +14,9 @@ document.addEventListener('DOMContentLoaded', function() {
       userIdInput.value = result.userId;
     }
   });
+
+  // Initialize debug button
+  updateDebugButton();
 
   // Save configuration
   saveButton.addEventListener('click', function() {
@@ -46,6 +50,31 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
   });
+
+  // Debug button - toggle debug mode
+  if (debugButton) {
+    debugButton.addEventListener('click', function() {
+      chrome.storage.sync.get(['debugMode'], function(result) {
+        const newDebugMode = !result.debugMode;
+        chrome.storage.sync.set({ debugMode: newDebugMode }, function() {
+          updateDebugButton();
+          showStatus(`Debug mode ${newDebugMode ? 'enabled' : 'disabled'}`, 'success');
+          // Notify background script and content scripts about debug mode change
+          chrome.runtime.sendMessage({ type: 'debugModeChanged', debugMode: newDebugMode });
+        });
+      });
+    });
+  }
+
+  function updateDebugButton() {
+    if (!debugButton) return;
+    
+    chrome.storage.sync.get(['debugMode'], function(result) {
+      const isDebugMode = result.debugMode || false;
+      debugButton.textContent = `Debug Mode: ${isDebugMode ? 'ON' : 'OFF'}`;
+      debugButton.className = isDebugMode ? 'debug-button active' : 'debug-button';
+    });
+  }
 
   function showStatus(message, type) {
     statusDiv.textContent = message;
