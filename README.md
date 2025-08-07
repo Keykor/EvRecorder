@@ -34,7 +34,7 @@
 
 ## 🔧 Configuration
 
-Events are configured through a JSON file with the following structure:
+Events are configured through the server response with the following structure:
 
 ```json
 {
@@ -94,8 +94,26 @@ Session data structure:
 
 1. 🔧 Enable Developer mode in Chrome (`chrome://extensions/`)
 2. 📁 Load unpacked extension
-3. ⚙️ Configure server URL and user ID
+3. ⚙️ **Configure server URL and user ID** (required for capture to work)
 4. 🌐 Start browsing to capture events
+
+## 🖥️ Server Integration
+
+⚠️ **Server configuration is required** - the extension will not capture events without a configured server.
+
+The extension communicates with a server using two main endpoints:
+
+### Endpoints
+
+#### GET `/start`
+- **Purpose**: 🎯 Fetch event configuration when starting capture
+- **Response**: JSON configuration object
+- **Called**: When extension loads or starts new capture session
+
+#### POST `/save`
+- **Purpose**: 💾 Save captured session data
+- **Body**: Complete session data including events
+- **Called**: When capture session ends (tab closed/navigation)
 
 ## 🖥️ Example Server
 
@@ -105,10 +123,12 @@ Includes API documentation, examples, and setup instructions.
 
 ## ⚡ How It Works
 
-1. 🆔 Configure user ID and server URL
-2. 🚀 Extension captures events automatically  
-3.  Data sent to server when session ends
-4. 🎯 Icon shows capture status
+1. 🆔 Configure user ID and server URL in options (both required)
+2. 🎯 Extension fetches configuration from server (`GET /start`)
+3. 🚀 Extension captures events automatically based on server config
+4. 💾 Data sent to server (`POST /save`) when session ends
+5. 🎯 Icon shows capture status
+6. ❌ No capture without server configuration
 
 ## 🔒 Anonymization
 

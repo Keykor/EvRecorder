@@ -37,8 +37,18 @@ fetchEventConfig().then(config => {
 });
 
 // Create a new event capture session if there is an event configuration
-function createNewCaptureSession(tabId) {
-  if (!eventConfig) return;
+async function createNewCaptureSession(tabId) {
+  // If no config available, try to fetch it
+  if (!eventConfig) {
+    console.log("No event config available, trying to fetch from server");
+    eventConfig = await fetchEventConfig();
+  }
+  
+  if (!eventConfig || !eventConfig.events || !Array.isArray(eventConfig.events)) {
+    console.log("No valid event configuration available, session creation skipped for tab", tabId);
+    return;
+  }
+  
   console.log("Creating new capture session for tab", tabId);
   
   // Get stored user ID and tab information
@@ -77,6 +87,10 @@ function createNewCaptureSession(tabId) {
             );
             delete sessionData[tabId];
             updateIcon();
+          } else if (response && !response.success) {
+            console.error("Content script rejected configuration:", response.reason);
+            delete sessionData[tabId];
+            updateIcon();
           } else {
             console.log("Event configuration successfully sent", response);
             updateIcon();
@@ -103,7 +117,7 @@ function endCaptureSession(tabId) {
 // Configure event capture methods in the content script
 chrome.tabs.onCreated.addListener(async (tab) => {
   console.log("Tab created:", tab);
-  createNewCaptureSession(tab.id);
+  await createNewCaptureSession(tab.id);
 });
 
 // When a tab is closed, send captured events to the server
@@ -113,11 +127,11 @@ chrome.tabs.onRemoved.addListener((tabId) => {
 });
 
 // When a tab is updated, send captured events to the server and create a new session
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   if (changeInfo.status === "complete") {
     console.log("Tab updated:", tabId, "URL:", tab.url);
     endCaptureSession(tabId);
-    createNewCaptureSession(tabId);
+    await createNewCaptureSession(tabId);
   }
 });
 
@@ -132,7 +146,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   } else if (message.type === "getSessionCount") {
     sendResponse({ count: Object.keys(sessionData).length });
   } else if (message.type === "configUpdated") {
-    console.log("Configuration updated");
+    console.log("Configuration updated, fetching new event config");
+    // Reload event configuration when settings are updated
+    fetchEventConfig().then(config => {
+      eventConfig = config;
+      console.log("Event configuration reloaded:", config);
+    });
   }
   return true; // Keep message channel open for async response
 });
@@ -140,52 +159,74 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 // ------------------ Server communication functions ------------------
 
 // Get event configuration from the server
-/*
 async function fetchEventConfig() {
     try {
-        const response = await fetch('https://example.com/get-event-config');
-        const eventConfig = await response.json();
-        console.log('Event config fetched:', eventConfig);
+        // Get server URL from storage
+        const result = await chrome.storage.sync.get(['serverUrl']);
+        
+        // If no server URL is configured, don't capture
+        if (!result.serverUrl) {
+            console.log("No server URL configured, event capture disabled");
+            return null;
+        }
+        
+        const response = await fetch(`${result.serverUrl}/start`);
+        const serverResponse = await response.json();
+        console.log('Server response:', serverResponse);
+        
+        let eventConfig;
+        if (serverResponse.data) {
+            eventConfig = serverResponse.data;
+        }else {
+            console.error('Invalid server response structure:', serverResponse);
+            return null;
+        }
+        
+        // Validate the structure of the configuration
+        if (!eventConfig.events || !Array.isArray(eventConfig.events)) {
+            console.error('Invalid event config structure - missing or invalid events array:', eventConfig);
+            return null;
+        }
+        
+        console.log('Event config extracted:', eventConfig);
         return eventConfig;
     }
     catch (error) {
-        console.error('Error fetching event config:', error);
+        console.error('Error fetching event config from server:', error);
         return null;
     }
 }
 
 // Send captured events to the server
-function sendEventsToServer(tabId) {
-    fetch('https://example.com/send-events', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(sessionData[tabId])
-    }).then(response => console.log('Events sent', response))
-    .catch(error => console.error('Error sending events', error));
-}
-*/
-
-// ------------------ Test functions ------------------
-
-function fetchEventConfig() {
-  console.log("Fetching event configuration from file");
-  return fetch(chrome.runtime.getURL('eventConfigExample.json'))
-    .then(response => response.json())
-    .then(config => {
-      console.log("Event config loaded:", config);
-      return config;
-    })
-    .catch(error => {
-      console.error("Error loading event config:", error);
-      return null;
-    });
-}
-
-function sendEventsToServer(tabId) {
-  const sessionInfo = sessionData[tabId];
-  if (!sessionInfo) return;
-  
-  console.log("Sending events to server:", sessionInfo);
+async function sendEventsToServer(tabId) {
+    const sessionInfo = sessionData[tabId];
+    if (!sessionInfo) return;
+    
+    try {
+        // Get server URL from storage
+        const result = await chrome.storage.sync.get(['serverUrl']);
+        
+        // If no server URL is configured, just log the data locally
+        if (!result.serverUrl) {
+            console.log('No server URL configured. Session data (not sent):', sessionInfo);
+            return;
+        }
+        
+        const response = await fetch(`${result.serverUrl}/save`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(sessionInfo)
+        });
+        
+        if (response.ok) {
+            console.log('Events sent successfully to server');
+        } else {
+            console.error('Server returned error:', response.status, response.statusText);
+        }
+    } catch (error) {
+        console.error('Error sending events to server:', error);
+        console.log('Session data that failed to send:', sessionInfo);
+    }
 }

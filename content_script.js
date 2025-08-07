@@ -1,5 +1,16 @@
 // Function that captures events and sends them to background.js
 function captureMethods(eventConfig) {
+  // Validate that eventConfig exists and has events array
+  if (!eventConfig) {
+    console.error("No event configuration provided");
+    return;
+  }
+  
+  if (!eventConfig.events || !Array.isArray(eventConfig.events)) {
+    console.error("Invalid event configuration: events array is missing or invalid", eventConfig);
+    return;
+  }
+  
   let eventListeners = [];
 
   // Save the event in an array and send it to background.js
@@ -120,6 +131,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message.type === "captureMethods") {
     console.log("Event configuration received", message.config);
+    
+    if (!message.config) {
+      console.error("No configuration provided in message");
+      sendResponse({ success: false, reason: "No configuration provided" });
+      return;
+    }
+    
     captureMethods(message.config);
     sendResponse({ success: true });
   }
