@@ -3,6 +3,11 @@
   "name": "EvRecorder",
   "version": "1.0",
   "description": "EvRecorder - Capture and anonymize user events on web pages.",
+  "applications": {
+    "gecko": {
+      "id": "evrecorder@extension.local"
+    }
+  },
   "permissions": [
     "tabs",
     "activeTab",
@@ -33,7 +38,13 @@
   "content_scripts": [
     {
       "matches": ["http://*/*", "https://*/*"],
-      "js": ["anonymization.js", "content_script.js"]
+      "js": ["anonymization.js", "content_script.js"],
+      "run_at": "document_end",
+      "all_frames": false
     }
+  ],
+  "content_security_policy": "script-src 'self'; object-src 'self'",
+  "web_accessible_resources": [
+    "icons/*.png"
   ]
 }

@@ -1,3 +1,6 @@
+// Cross-browser compatibility
+const extensionAPI = typeof browser !== 'undefined' ? browser : chrome;
+
 document.addEventListener('DOMContentLoaded', function() {
   const serverUrlInput = document.getElementById('serverUrl');
   const userIdInput = document.getElementById('userId');
@@ -15,17 +18,21 @@ document.addEventListener('DOMContentLoaded', function() {
   // Configure button - open options page
   if (configureButton) {
     configureButton.addEventListener('click', function() {
-      chrome.runtime.openOptionsPage();
+      extensionAPI.runtime.openOptionsPage();
     });
   }
 
   // Load saved configuration for form (if elements exist)
   if (serverUrlInput && userIdInput) {
-    chrome.storage.sync.get(['serverUrl', 'userId'], function(result) {
-      if (result.serverUrl) {
+    extensionAPI.storage.sync.get(['serverUrl', 'userId'], function(result) {
+      if (extensionAPI.runtime.lastError) {
+        console.error('Error loading configuration in popup:', extensionAPI.runtime.lastError);
+        return;
+      }
+      if (result && result.serverUrl) {
         serverUrlInput.value = result.serverUrl;
       }
-      if (result.userId) {
+      if (result && result.userId) {
         userIdInput.value = result.userId;
       }
     });
@@ -51,16 +58,17 @@ document.addEventListener('DOMContentLoaded', function() {
       }
 
       // Save to storage
-      chrome.storage.sync.set({
+      extensionAPI.storage.sync.set({
         serverUrl: serverUrl,
         userId: userId
       }, function() {
-        if (chrome.runtime.lastError) {
-          showStatus('Error saving configuration', 'error');
+        if (extensionAPI.runtime.lastError) {
+          console.error('Storage error in popup:', extensionAPI.runtime.lastError);
+          showStatus('Error saving configuration: ' + extensionAPI.runtime.lastError.message, 'error');
         } else {
           showStatus('Configuration saved successfully', 'success');
           // Notify background script
-          chrome.runtime.sendMessage({ type: 'configUpdated' });
+          extensionAPI.runtime.sendMessage({ type: 'configUpdated' });
           // Update status display
           updateStatus();
         }
@@ -70,8 +78,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function updateStatus() {
     // Check configuration status
-    chrome.storage.sync.get(['serverUrl', 'userId'], function(result) {
-      const isConfigured = result.serverUrl && result.userId;
+    extensionAPI.storage.sync.get(['serverUrl', 'userId'], function(result) {
+      if (extensionAPI.runtime.lastError) {
+        console.error('Error reading configuration in popup:', extensionAPI.runtime.lastError);
+        return;
+      }
+      const isConfigured = result && result.serverUrl && result.userId;
       
       if (configStatusElement) {
         configStatusElement.textContent = isConfigured ? 'Configured' : 'Not configured';
@@ -80,9 +92,9 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Get active sessions from background script
-    chrome.runtime.sendMessage({ type: 'getSessionCount' }, function(response) {
-      if (chrome.runtime.lastError) {
-        console.log('Could not get session count:', chrome.runtime.lastError.message);
+    extensionAPI.runtime.sendMessage({ type: 'getSessionCount' }, function(response) {
+      if (extensionAPI.runtime.lastError) {
+        console.log('Could not get session count:', extensionAPI.runtime.lastError.message);
         return;
       }
       

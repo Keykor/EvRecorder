@@ -1,3 +1,6 @@
+// Cross-browser compatibility
+const extensionAPI = typeof browser !== 'undefined' ? browser : chrome;
+
 // Maintains session data for each tab
 let sessionData = {};
 
@@ -25,7 +28,7 @@ function updateIcon() {
         "48": "icons/icon-inactive-48.png",
         "128": "icons/icon-inactive-128.png",
       };
-  chrome.browserAction.setIcon({ path: iconPath });
+  extensionAPI.browserAction.setIcon({ path: iconPath });
 }
 
 // Event configuration
@@ -50,15 +53,26 @@ async function createNewCaptureSession(tabId) {
   }
 
   console.log("Creating new capture session for tab", tabId);  // Get stored user ID and tab information
-  chrome.storage.sync.get(['userId'], (result) => {
-    if (!result.userId) {
-      console.error("No user ID configured");
+  extensionAPI.storage.sync.get(['userId'], (result) => {
+    if (!result || !result.userId) {
+      // Try local storage as fallback
+      extensionAPI.storage.local.get(['userId'], (localResult) => {
+        if (!localResult || !localResult.userId) {
+          console.error("No user ID configured in sync or local storage");
+          return;
+        }
+        proceedWithSession(localResult.userId, tabId);
+      });
       return;
     }
-    
-    chrome.tabs.get(tabId, (tab) => {
-      if (chrome.runtime.lastError) {
-        console.error("Error getting tab info:", chrome.runtime.lastError.message);
+    proceedWithSession(result.userId, tabId);
+  });
+}
+
+function proceedWithSession(userId, tabId) {
+    extensionAPI.tabs.get(tabId, (tab) => {
+      if (extensionAPI.runtime.lastError) {
+        console.error("Error getting tab info:", extensionAPI.runtime.lastError.message);
         return;
       }
       
@@ -66,7 +80,7 @@ async function createNewCaptureSession(tabId) {
       const finalUrl = anonymizeUrl(tab.url, eventConfig.url);
       
       sessionData[tabId] = {
-        userId: result.userId,
+        userId: userId,
         tabId: tabId,
         url: finalUrl,
         startTime: Date.now(),
@@ -74,14 +88,14 @@ async function createNewCaptureSession(tabId) {
         events: []
       };
       
-      chrome.tabs.sendMessage(
+      extensionAPI.tabs.sendMessage(
         tabId,
         { type: "captureMethods", config: eventConfig },
         (response) => {
-          if (chrome.runtime.lastError) {
+          if (extensionAPI.runtime.lastError) {
             console.error(
               "Error sending event configuration to new session:",
-              chrome.runtime.lastError.message,
+              extensionAPI.runtime.lastError.message,
             );
             delete sessionData[tabId];
             updateIcon();
@@ -96,7 +110,6 @@ async function createNewCaptureSession(tabId) {
         },
       );
     });
-  });
 }
 
 // End the event capture session and send captured events to the server
@@ -113,19 +126,19 @@ function endCaptureSession(tabId) {
 }
 
 // Configure event capture methods in the content script
-chrome.tabs.onCreated.addListener(async (tab) => {
+extensionAPI.tabs.onCreated.addListener(async (tab) => {
   console.log("Tab created:", tab);
   await createNewCaptureSession(tab.id);
 });
 
 // When a tab is closed, send captured events to the server
-chrome.tabs.onRemoved.addListener((tabId) => {
+extensionAPI.tabs.onRemoved.addListener((tabId) => {
   console.log("Tab removed:", tabId);
   endCaptureSession(tabId);
 });
 
 // When a tab is updated, send captured events to the server and create a new session
-chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+extensionAPI.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   if (changeInfo.status === "complete") {
     console.log("Tab updated:", tabId, "URL:", tab.url);
     endCaptureSession(tabId);
@@ -133,7 +146,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   }
 });
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+extensionAPI.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "event") {
     if (sessionData[sender.tab.id]) {
       sessionData[sender.tab.id].events.push(message.event);
@@ -152,9 +165,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     });
   } else if (message.type === "debugModeChanged") {
     // Notify all tabs about debug mode change
-    chrome.tabs.query({}, (tabs) => {
+    extensionAPI.tabs.query({}, (tabs) => {
       tabs.forEach((tab) => {
-        chrome.tabs.sendMessage(tab.id, { type: "debugModeChanged", debugMode: message.debugMode });
+        extensionAPI.tabs.sendMessage(tab.id, { type: "debugModeChanged", debugMode: message.debugMode });
       });
     });
   }
@@ -166,11 +179,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 // Get event configuration from the server
 async function fetchEventConfig() {
     try {
-        // Get server URL from storage
-        const result = await chrome.storage.sync.get(['serverUrl']);
+        // Get server URL from storage - try both sync and local
+        let result = await extensionAPI.storage.sync.get(['serverUrl']);
+        
+        if (!result || !result.serverUrl) {
+            // Try local storage as fallback
+            result = await extensionAPI.storage.local.get(['serverUrl']);
+        }
         
         // If no server URL is configured, don't capture
-        if (!result.serverUrl) {
+        if (!result || !result.serverUrl) {
             console.log("No server URL configured, event capture disabled");
             return null;
         }
@@ -208,11 +226,14 @@ async function sendEventsToServer(tabId) {
     if (!sessionInfo) return;
     
     try {
-        // Get server URL from storage
-        const result = await chrome.storage.sync.get(['serverUrl']);
+        // Get server URL from storage - try both sync and local
+        let result = await extensionAPI.storage.sync.get(['serverUrl']);
+        if (!result || !result.serverUrl) {
+            result = await extensionAPI.storage.local.get(['serverUrl']);
+        }
         
         // If no server URL is configured, just log the data locally
-        if (!result.serverUrl) {
+        if (!result || !result.serverUrl) {
             console.log('No server URL configured. Session data (not sent):', sessionInfo);
             return;
         }

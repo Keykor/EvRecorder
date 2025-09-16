@@ -1,8 +1,11 @@
+// Cross-browser compatibility
+const extensionAPI = typeof browser !== 'undefined' ? browser : chrome;
+
 // Debug logging functionality
 let debugMode = false;
 
 // Initialize debug mode from storage
-chrome.storage.sync.get(['debugMode'], function(result) {
+extensionAPI.storage.sync.get(['debugMode'], function(result) {
   debugMode = result.debugMode || false;
 });
 
@@ -61,7 +64,7 @@ function captureMethods(eventConfig) {
     capturedData.scrollX = window.scrollX || 0;
     capturedData.scrollY = window.scrollY || 0;
 
-    chrome.runtime.sendMessage({ type: "event", event: capturedData });
+    extensionAPI.runtime.sendMessage({ type: "event", event: capturedData });
   }
 
   // Configure event polling
@@ -122,7 +125,7 @@ function captureMethods(eventConfig) {
     clearTimeout(timeoutId);
 
     // Notify background script that capture has ended
-    chrome.runtime.sendMessage({ type: "captureEnded" });
+    extensionAPI.runtime.sendMessage({ type: "captureEnded" });
   }
 
   // Configure timeout to stop capture
@@ -137,7 +140,7 @@ function isHttpOrHttps(url) {
   return url.startsWith("http://") || url.startsWith("https://");
 }
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+extensionAPI.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'debugModeChanged') {
     debugMode = message.debugMode;
     return;

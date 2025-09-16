@@ -1,3 +1,6 @@
+// Cross-browser compatibility
+const extensionAPI = typeof browser !== 'undefined' ? browser : chrome;
+
 document.addEventListener('DOMContentLoaded', function() {
   const serverUrlInput = document.getElementById('serverUrl');
   const userIdInput = document.getElementById('userId');
@@ -6,11 +9,15 @@ document.addEventListener('DOMContentLoaded', function() {
   const statusDiv = document.getElementById('status');
 
   // Load saved configuration
-  chrome.storage.sync.get(['serverUrl', 'userId'], function(result) {
-    if (result.serverUrl) {
+  extensionAPI.storage.sync.get(['serverUrl', 'userId'], function(result) {
+    if (extensionAPI.runtime.lastError) {
+      console.error('Error loading configuration:', extensionAPI.runtime.lastError);
+      return;
+    }
+    if (result && result.serverUrl) {
       serverUrlInput.value = result.serverUrl;
     }
-    if (result.userId) {
+    if (result && result.userId) {
       userIdInput.value = result.userId;
     }
   });
@@ -37,16 +44,24 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Save to storage
-    chrome.storage.sync.set({
-      serverUrl: serverUrl,
-      userId: userId
-    }, function() {
-      if (chrome.runtime.lastError) {
-        showStatus('Error saving configuration', 'error');
+    const config = { serverUrl: serverUrl, userId: userId };
+    
+    // Save to both sync and local storage for better compatibility
+    extensionAPI.storage.sync.set(config, function() {
+      if (extensionAPI.runtime.lastError) {
+        console.error('Storage sync error:', extensionAPI.runtime.lastError);
+      } else {
+      }
+    });
+    
+    extensionAPI.storage.local.set(config, function() {
+      if (extensionAPI.runtime.lastError) {
+        console.error('Storage local error:', extensionAPI.runtime.lastError);
+        showStatus('Error saving configuration: ' + extensionAPI.runtime.lastError.message, 'error');
       } else {
         showStatus('Configuration saved successfully', 'success');
         // Notify background script
-        chrome.runtime.sendMessage({ type: 'configUpdated' });
+        extensionAPI.runtime.sendMessage({ type: 'configUpdated' });
       }
     });
   });
@@ -54,13 +69,23 @@ document.addEventListener('DOMContentLoaded', function() {
   // Debug button - toggle debug mode
   if (debugButton) {
     debugButton.addEventListener('click', function() {
-      chrome.storage.sync.get(['debugMode'], function(result) {
-        const newDebugMode = !result.debugMode;
-        chrome.storage.sync.set({ debugMode: newDebugMode }, function() {
-          updateDebugButton();
-          showStatus(`Debug mode ${newDebugMode ? 'enabled' : 'disabled'}`, 'success');
-          // Notify background script and content scripts about debug mode change
-          chrome.runtime.sendMessage({ type: 'debugModeChanged', debugMode: newDebugMode });
+      extensionAPI.storage.sync.get(['debugMode'], function(result) {
+        if (extensionAPI.runtime.lastError) {
+          console.error('Error reading debug mode:', extensionAPI.runtime.lastError);
+          showStatus('Error reading debug mode', 'error');
+          return;
+        }
+        const newDebugMode = !(result && result.debugMode);
+        extensionAPI.storage.sync.set({ debugMode: newDebugMode }, function() {
+          if (extensionAPI.runtime.lastError) {
+            console.error('Error saving debug mode:', extensionAPI.runtime.lastError);
+            showStatus('Error saving debug mode', 'error');
+          } else {
+            updateDebugButton();
+            showStatus(`Debug mode ${newDebugMode ? 'enabled' : 'disabled'}`, 'success');
+            // Notify background script and content scripts about debug mode change
+            extensionAPI.runtime.sendMessage({ type: 'debugModeChanged', debugMode: newDebugMode });
+          }
         });
       });
     });
@@ -69,8 +94,12 @@ document.addEventListener('DOMContentLoaded', function() {
   function updateDebugButton() {
     if (!debugButton) return;
     
-    chrome.storage.sync.get(['debugMode'], function(result) {
-      const isDebugMode = result.debugMode || false;
+    extensionAPI.storage.sync.get(['debugMode'], function(result) {
+      if (extensionAPI.runtime.lastError) {
+        console.error('Error reading debug mode for button update:', extensionAPI.runtime.lastError);
+        return;
+      }
+      const isDebugMode = (result && result.debugMode) || false;
       debugButton.textContent = `Debug Mode: ${isDebugMode ? 'ON' : 'OFF'}`;
       debugButton.className = isDebugMode ? 'debug-button active' : 'debug-button';
     });

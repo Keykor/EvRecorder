@@ -3,7 +3,7 @@
 <div align="center">
   <img src="icons/icon-active-128.png" alt="EvRecorder Active" width="128" height="128">
   <br>
-  <strong>Browser extension for capturing user interaction events</strong>
+  <strong>Cross-browser extension for capturing user interaction events</strong>
 </div>
 
 ---
@@ -14,6 +14,8 @@
 - ⚙️ Configurable event types and attributes
 - 📊 Session-based data collection
 - 📈 Visual status indicators
+- 🌐 Cross-browser compatibility (Chrome & Firefox)
+- 🛡️ Manifest V2 with proper Content Security Policy
 
 ## 🎨 Extension States
 
@@ -92,10 +94,18 @@ Session data structure:
 
 ## 📦 Installation
 
+### Chrome
 1. 🔧 Enable Developer mode in Chrome (`chrome://extensions/`)
-2. 📁 Load unpacked extension
+2. 📁 Click "Load unpacked" and select extension folder
 3. ⚙️ **Configure server URL and user ID** (required for capture to work)
 4. 🌐 Start browsing to capture events
+
+### Firefox
+1. 🔧 Open Firefox and go to `about:debugging`
+2. 📁 Click "This Firefox" → "Load Temporary Add-on"
+3. 📄 Select the `manifest.json` file
+4. ⚙️ **Configure server URL and user ID** (required for capture to work)
+5. 🌐 Start browsing to capture events
 
 ## 🖥️ Server Integration
 
@@ -127,8 +137,15 @@ Includes API documentation, examples, and setup instructions.
 2. 🎯 Extension fetches configuration from server (`GET /start`)
 3. 🚀 Extension captures events automatically based on server config
 4. 💾 Data sent to server (`POST /save`) when session ends
-5. 🎯 Icon shows capture status
-6. ❌ No capture without server configuration
+5. 🎯 Icon shows capture status (inactive/active)
+6. 🌐 Works seamlessly in both Chrome and Firefox
+7. ❌ No capture without server configuration
+
+## 🔄 Debug Mode
+
+The extension includes a debug mode that can be toggled from the options page:
+- 🐛 **Debug ON**: Shows detailed console logs for troubleshooting
+- 🤫 **Debug OFF**: Minimal logging for production use
 
 ## 🔒 Anonymization
 
