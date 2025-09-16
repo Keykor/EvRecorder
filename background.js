@@ -25,7 +25,7 @@ function updateIcon() {
         "48": "icons/icon-inactive-48.png",
         "128": "icons/icon-inactive-128.png",
       };
-  chrome.action.setIcon({ path: iconPath });
+  chrome.browserAction.setIcon({ path: iconPath });
 }
 
 // Event configuration
