@@ -8,6 +8,39 @@ extensionAPI.runtime.onInstalled.addListener((details) => {
   }
 });
 
+// Helper function to promisify storage API
+function getStorageData(keys, useLocal = false) {
+  return new Promise((resolve, reject) => {
+    const storage = useLocal ? extensionAPI.storage.local : extensionAPI.storage.sync;
+    storage.get(keys, (result) => {
+      if (extensionAPI.runtime.lastError) {
+        reject(new Error(extensionAPI.runtime.lastError.message));
+      } else {
+        resolve(result);
+      }
+    });
+  });
+}
+
+// Helper function to get data from sync storage with local fallback
+async function getStorageWithFallback(keys) {
+  try {
+    const result = await getStorageData(keys, false); // Try sync first
+    if (result && Object.keys(result).length > 0) {
+      return result;
+    }
+  } catch (error) {
+    console.log('Sync storage failed, trying local storage:', error.message);
+  }
+
+  try {
+    return await getStorageData(keys, true); // Fallback to local
+  } catch (error) {
+    console.error('Both sync and local storage failed:', error.message);
+    return {};
+  }
+}
+
 // Maintains session data for each tab
 let sessionData = {};
 
@@ -42,81 +75,98 @@ function updateIcon() {
 let eventConfig = null;
 
 // Initialize configuration when loading the extension
-fetchEventConfig().then(config => {
-  eventConfig = config;
-});
+(async () => {
+  try {
+    eventConfig = await fetchEventConfig();
+    console.log("Initial event configuration loaded:", eventConfig);
+  } catch (error) {
+    console.error("Error loading initial event configuration:", error);
+  }
+})();
 
 // Create a new event capture session if there is an event configuration
 async function createNewCaptureSession(tabId) {
-  // If no config available, try to fetch it
-  if (!eventConfig) {
-    console.log("No event config available, trying to fetch from server");
-    eventConfig = await fetchEventConfig();
-  }
-  
-  if (!eventConfig || !eventConfig.events || !Array.isArray(eventConfig.events)) {
-    console.log("No valid event configuration available, session creation skipped for tab", tabId);
-    return;
-  }
+  try {
+    // If no config available, try to fetch it
+    if (!eventConfig) {
+      console.log("No event config available, trying to fetch from server");
+      eventConfig = await fetchEventConfig();
+    }
 
-  console.log("Creating new capture session for tab", tabId);  // Get stored user ID and tab information
-  extensionAPI.storage.sync.get(['userId'], (result) => {
-    if (!result || !result.userId) {
-      // Try local storage as fallback
-      extensionAPI.storage.local.get(['userId'], (localResult) => {
-        if (!localResult || !localResult.userId) {
-          console.error("No user ID configured in sync or local storage");
-          return;
-        }
-        proceedWithSession(localResult.userId, tabId);
-      });
+    if (!eventConfig || !eventConfig.events || !Array.isArray(eventConfig.events)) {
+      console.log("No valid event configuration available, session creation skipped for tab", tabId);
       return;
     }
-    proceedWithSession(result.userId, tabId);
-  });
+
+    console.log("Creating new capture session for tab", tabId);
+
+    // Get stored user ID with proper async handling
+    const userResult = await getStorageWithFallback(['userId']);
+
+    if (!userResult || !userResult.userId) {
+      console.error("No user ID configured in storage");
+      return;
+    }
+
+    await proceedWithSession(userResult.userId, tabId);
+  } catch (error) {
+    console.error("Error creating capture session:", error);
+  }
 }
 
-function proceedWithSession(userId, tabId) {
-    extensionAPI.tabs.get(tabId, (tab) => {
-      if (extensionAPI.runtime.lastError) {
-        console.error("Error getting tab info:", extensionAPI.runtime.lastError.message);
-        return;
-      }
-      
-      // Apply URL anonymization if configured
-      const finalUrl = anonymizeUrl(tab.url, eventConfig.url);
-      
-      sessionData[tabId] = {
-        userId: userId,
-        tabId: tabId,
-        url: finalUrl,
-        startTime: Date.now(),
-        endTime: null,
-        events: []
-      };
-      
+async function proceedWithSession(userId, tabId) {
+  try {
+    // Get tab info with Promise wrapper
+    const tab = await new Promise((resolve, reject) => {
+      extensionAPI.tabs.get(tabId, (tab) => {
+        if (extensionAPI.runtime.lastError) {
+          reject(new Error(extensionAPI.runtime.lastError.message));
+        } else {
+          resolve(tab);
+        }
+      });
+    });
+
+    // Apply URL anonymization if configured
+    const finalUrl = anonymizeUrl(tab.url, eventConfig.url);
+
+    sessionData[tabId] = {
+      userId: userId,
+      tabId: tabId,
+      url: finalUrl,
+      startTime: Date.now(),
+      endTime: null,
+      events: []
+    };
+
+    // Send message to content script with Promise wrapper
+    const response = await new Promise((resolve, reject) => {
       extensionAPI.tabs.sendMessage(
         tabId,
         { type: "captureMethods", config: eventConfig },
         (response) => {
           if (extensionAPI.runtime.lastError) {
-            console.error(
-              "Error sending event configuration to new session:",
-              extensionAPI.runtime.lastError.message,
-            );
-            delete sessionData[tabId];
-            updateIcon();
-          } else if (response && !response.success) {
-            console.error("Content script rejected configuration:", response.reason);
-            delete sessionData[tabId];
-            updateIcon();
+            reject(new Error(extensionAPI.runtime.lastError.message));
           } else {
-            console.log("Event configuration successfully sent", response);
-            updateIcon();
+            resolve(response);
           }
-        },
+        }
       );
     });
+
+    if (response && !response.success) {
+      console.error("Content script rejected configuration:", response.reason);
+      delete sessionData[tabId];
+    } else {
+      console.log("Event configuration successfully sent", response);
+    }
+
+    updateIcon();
+  } catch (error) {
+    console.error("Error in proceedWithSession:", error);
+    delete sessionData[tabId];
+    updateIcon();
+  }
 }
 
 // End the event capture session and send captured events to the server
@@ -164,36 +214,71 @@ extensionAPI.runtime.onMessage.addListener((message, sender, sendResponse) => {
   } else if (message.type === "getSessionCount") {
     sendResponse({ count: Object.keys(sessionData).length });
   } else if (message.type === "configUpdated") {
-    console.log("Configuration updated, fetching new event config");
-    // Reload event configuration when settings are updated
-    fetchEventConfig().then(config => {
-      eventConfig = config;
-      console.log("Event configuration reloaded:", config);
-    });
+    handleConfigUpdate();
   } else if (message.type === "debugModeChanged") {
-    // Notify all tabs about debug mode change
-    extensionAPI.tabs.query({}, (tabs) => {
-      tabs.forEach((tab) => {
-        extensionAPI.tabs.sendMessage(tab.id, { type: "debugModeChanged", debugMode: message.debugMode });
-      });
-    });
+    handleDebugModeChange(message.debugMode);
   }
   return true; // Keep message channel open for async response
 });
+
+// ------------------ Message handler functions ------------------
+
+// Handle configuration update requests
+async function handleConfigUpdate() {
+  console.log("Configuration updated, fetching new event config");
+  try {
+    eventConfig = await fetchEventConfig();
+    console.log("Event configuration reloaded:", eventConfig);
+  } catch (error) {
+    console.error("Error reloading event configuration:", error);
+  }
+}
+
+// Handle debug mode changes across all tabs
+async function handleDebugModeChange(debugMode) {
+  try {
+    const tabs = await new Promise((resolve, reject) => {
+      extensionAPI.tabs.query({}, (tabs) => {
+        if (extensionAPI.runtime.lastError) {
+          reject(new Error(extensionAPI.runtime.lastError.message));
+        } else {
+          resolve(tabs);
+        }
+      });
+    });
+
+    // Send debug mode change to all tabs
+    const messagePromises = tabs.map(tab =>
+      new Promise((resolve) => {
+        extensionAPI.tabs.sendMessage(
+          tab.id,
+          { type: "debugModeChanged", debugMode: debugMode },
+          (response) => {
+            // Don't reject on individual tab failures - tab might be closed
+            if (extensionAPI.runtime.lastError) {
+              console.log(`Failed to send debug mode to tab ${tab.id}:`, extensionAPI.runtime.lastError.message);
+            }
+            resolve();
+          }
+        );
+      })
+    );
+
+    await Promise.all(messagePromises);
+    console.log("Debug mode change sent to all tabs");
+  } catch (error) {
+    console.error("Error updating debug mode across tabs:", error);
+  }
+}
 
 // ------------------ Server communication functions ------------------
 
 // Get event configuration from the server
 async function fetchEventConfig() {
     try {
-        // Get server URL from storage - try both sync and local
-        let result = await extensionAPI.storage.sync.get(['serverUrl']);
-        
-        if (!result || !result.serverUrl) {
-            // Try local storage as fallback
-            result = await extensionAPI.storage.local.get(['serverUrl']);
-        }
-        
+        // Get server URL from storage with proper async handling
+        const result = await getStorageWithFallback(['serverUrl']);
+
         // If no server URL is configured, don't capture
         if (!result || !result.serverUrl) {
             console.log("No server URL configured, event capture disabled");
@@ -231,14 +316,11 @@ async function fetchEventConfig() {
 async function sendEventsToServer(tabId) {
     const sessionInfo = sessionData[tabId];
     if (!sessionInfo) return;
-    
+
     try {
-        // Get server URL from storage - try both sync and local
-        let result = await extensionAPI.storage.sync.get(['serverUrl']);
-        if (!result || !result.serverUrl) {
-            result = await extensionAPI.storage.local.get(['serverUrl']);
-        }
-        
+        // Get server URL from storage with proper async handling
+        const result = await getStorageWithFallback(['serverUrl']);
+
         // If no server URL is configured, just log the data locally
         if (!result || !result.serverUrl) {
             console.log('No server URL configured. Session data (not sent):', sessionInfo);
