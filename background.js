@@ -1,6 +1,13 @@
 // Cross-browser compatibility
 const extensionAPI = typeof browser !== 'undefined' ? browser : chrome;
 
+// Open options page on installation
+extensionAPI.runtime.onInstalled.addListener((details) => {
+  if (details.reason === 'install') {
+    extensionAPI.runtime.openOptionsPage();
+  }
+});
+
 // Maintains session data for each tab
 let sessionData = {};
 
