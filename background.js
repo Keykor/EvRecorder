@@ -128,7 +128,7 @@ async function proceedWithSession(userId, tabId) {
     });
 
     // Apply URL anonymization if configured
-    const finalUrl = anonymizeUrl(tab.url, eventConfig.url);
+    const finalUrl = anonymizeUrl(tab.url || '', eventConfig?.url);
 
     sessionData[tabId] = {
       userId: userId,
@@ -205,12 +205,14 @@ extensionAPI.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 
 extensionAPI.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "event") {
-    if (sessionData[sender.tab.id]) {
+    if (sender.tab && sessionData[sender.tab.id]) {
       sessionData[sender.tab.id].events.push(message.event);
     }
   } else if (message.type === "captureEnded") {
-    console.log("Capture ended by timeout for tab", sender.tab.id);
-    endCaptureSession(sender.tab.id);
+    if (sender.tab) {
+      console.log("Capture ended by timeout for tab", sender.tab.id);
+      endCaptureSession(sender.tab.id);
+    }
   } else if (message.type === "getSessionCount") {
     sendResponse({ count: Object.keys(sessionData).length });
   } else if (message.type === "configUpdated") {
@@ -286,13 +288,25 @@ async function fetchEventConfig() {
         }
         
         const response = await fetch(`${result.serverUrl}/start`);
-        const serverResponse = await response.json();
+
+        if (!response.ok) {
+            console.error('Server request failed:', response.status, response.statusText);
+            return null;
+        }
+
+        let serverResponse;
+        try {
+            serverResponse = await response.json();
+        } catch (error) {
+            console.error('Invalid JSON response from server:', error);
+            return null;
+        }
         console.log('Server response:', serverResponse);
-        
+
         let eventConfig;
         if (serverResponse.data) {
             eventConfig = serverResponse.data;
-        }else {
+        } else {
             console.error('Invalid server response structure:', serverResponse);
             return null;
         }
