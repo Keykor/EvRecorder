@@ -14,8 +14,8 @@
 - ⚙️ Configurable event types and attributes
 - 📊 Session-based data collection
 - 📈 Visual status indicators
-- 🌐 Cross-browser compatibility (Chrome & Firefox)
-- 🛡️ Manifest V2 with proper Content Security Policy
+- 🌐 Cross-browser compatibility (Chrome, Firefox, Edge, Opera)
+- 🛡️ Manifest V3 with proper Content Security Policy
 
 ## 🎨 Extension States
 
@@ -94,8 +94,11 @@ Session data structure:
 
 ## 📦 Installation
 
-### Chrome
-1. 🔧 Enable Developer mode in Chrome (`chrome://extensions/`)
+### Chrome / Edge / Opera
+1. 🔧 Enable Developer mode in browser extensions page
+   - Chrome: `chrome://extensions/`
+   - Edge: `edge://extensions/`
+   - Opera: `opera://extensions/`
 2. 📁 Click "Load unpacked" and select extension folder
 3. ⚙️ **Configure server URL and user ID** (required for capture to work)
 4. 🌐 Start browsing to capture events
@@ -106,6 +109,8 @@ Session data structure:
 3. 📄 Select the `manifest.json` file
 4. ⚙️ **Configure server URL and user ID** (required for capture to work)
 5. 🌐 Start browsing to capture events
+
+> **Note**: For Firefox production, the extension needs to be signed by Mozilla. For Chrome Web Store, Edge Add-ons, and Opera Add-ons, upload the same package.
 
 ## 🖥️ Server Integration
 
@@ -138,7 +143,7 @@ Includes API documentation, examples, and setup instructions.
 3. 🚀 Extension captures events automatically based on server config
 4. 💾 Data sent to server (`POST /save`) when session ends
 5. 🎯 Icon shows capture status (inactive/active)
-6. 🌐 Works seamlessly in both Chrome and Firefox
+6. 🌐 Works seamlessly across Chrome, Firefox, Edge, and Opera
 7. ❌ No capture without server configuration
 
 ## 🔄 Debug Mode
