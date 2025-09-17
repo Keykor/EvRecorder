@@ -87,7 +87,14 @@ function updateIcon() {
         "48": "icons/icon-inactive-48.png",
         "128": "icons/icon-inactive-128.png",
       };
-  extensionAPI.browserAction.setIcon({ path: iconPath });
+
+  // Use action API instead of browserAction for Manifest V3
+  if (extensionAPI.action) {
+    extensionAPI.action.setIcon({ path: iconPath });
+  } else if (extensionAPI.browserAction) {
+    // Fallback for older browsers
+    extensionAPI.browserAction.setIcon({ path: iconPath });
+  }
 }
 
 // ==========================================
