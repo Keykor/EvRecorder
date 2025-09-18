@@ -9,6 +9,9 @@ const extensionAPI = typeof browser !== 'undefined' ? browser : chrome;
 let sessionData = {};
 let eventConfig = null;
 
+// Configuration constants
+const BACKUP_INTERVAL_MS = 300000; // 5 minutes
+
 // Open options page on installation
 extensionAPI.runtime.onInstalled.addListener((details) => {
   if (details.reason === 'install') {
@@ -419,7 +422,7 @@ setInterval(() => {
       }
     });
   }
-}, 60000); // 1 minute = 60,000ms
+}, BACKUP_INTERVAL_MS);
 
 // On extension startup, check for backup data and send it
 (async () => {
