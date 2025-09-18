@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "EvRecorder",
-  "version": "1.0",
+  "version": "1.2",
   "description": "EvRecorder - Capture and anonymize user events on web pages.",
   "browser_specific_settings": {
     "gecko": {

@@ -192,7 +192,7 @@ function endCaptureSession(tabId) {
   if (!sessionData[tabId]) return;
   console.log("Ending capture session for tab", tabId);
 
-  // Set end time
+  // Set end time to now (normal closure - user might be inactive)
   sessionData[tabId].endTime = Date.now();
 
   sendEventsToServer(tabId);
@@ -361,6 +361,122 @@ function handleMessage(message, sender, sendResponse) {
   }
   return true; // Keep message channel open for async response
 }
+
+// ==========================================
+// STORAGE BACKUP FUNCTIONS
+// ==========================================
+
+// Backup sessionData to storage every 1 minute
+setInterval(() => {
+  // Validate sessionData before backup
+  if (!sessionData || typeof sessionData !== 'object') {
+    console.warn('Invalid sessionData object, skipping backup');
+    return;
+  }
+
+  const activeSessions = Object.keys(sessionData).length;
+
+  if (activeSessions > 0) {
+    // Count total events for logging
+    const totalEvents = Object.values(sessionData).reduce((total, session) => {
+      return total + (session.events ? session.events.length : 0);
+    }, 0);
+
+    // Validate each session before backup
+    const validSessions = {};
+    let validCount = 0;
+
+    Object.entries(sessionData).forEach(([tabId, session]) => {
+      if (session && session.userId && session.startTime && Array.isArray(session.events)) {
+        validSessions[tabId] = session;
+        validCount++;
+      } else {
+        console.warn(`Invalid session data for tab ${tabId}, excluding from backup`);
+      }
+    });
+
+    if (validCount > 0) {
+      // Save valid sessionData to storage, replacing previous
+      extensionAPI.storage.local.set({
+        backupSessionData: validSessions
+      }, () => {
+        if (extensionAPI.runtime.lastError) {
+          console.error('Error backing up session data:', extensionAPI.runtime.lastError);
+        } else {
+          console.log(`Backup: ${validCount} sessions, ${totalEvents} total events saved to storage`);
+        }
+      });
+    } else {
+      console.warn('No valid sessions to backup');
+    }
+  } else {
+    // No active sessions, clear storage
+    extensionAPI.storage.local.remove(['backupSessionData'], () => {
+      if (extensionAPI.runtime.lastError) {
+        console.error('Error clearing backup storage:', extensionAPI.runtime.lastError);
+      } else {
+        console.log('No active sessions, cleared backup storage');
+      }
+    });
+  }
+}, 60000); // 1 minute = 60,000ms
+
+// On extension startup, check for backup data and send it
+(async () => {
+  try {
+    const result = await new Promise((resolve) => {
+      extensionAPI.storage.local.get(['backupSessionData'], resolve);
+    });
+
+    if (result.backupSessionData && Object.keys(result.backupSessionData).length > 0) {
+      console.log('Found backup session data, sending to server...');
+
+      // Send each session from backup
+      for (const [tabId, sessionInfo] of Object.entries(result.backupSessionData)) {
+        // Validate backup session before sending
+        if (!sessionInfo || !sessionInfo.userId || !sessionInfo.startTime || !Array.isArray(sessionInfo.events)) {
+          console.error(`Invalid backup session for tab ${tabId}, skipping`);
+          continue;
+        }
+
+        // Set end time to last event timestamp, or startTime if no events
+        if (sessionInfo.events.length > 0) {
+          const lastEvent = sessionInfo.events[sessionInfo.events.length - 1];
+          sessionInfo.endTime = lastEvent.timestamp;
+        } else {
+          sessionInfo.endTime = sessionInfo.startTime;
+        }
+
+        try {
+          // Use existing sendEventsToServer logic but with direct session info
+          const serverResult = await getStorageWithFallback(['serverUrl']);
+          if (serverResult && serverResult.serverUrl) {
+            const response = await fetch(`${serverResult.serverUrl}/save`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(sessionInfo)
+            });
+
+            if (response.ok) {
+              console.log(`Successfully sent backup session for tab ${tabId} (${sessionInfo.events.length} events)`);
+            } else {
+              console.error(`Server error for backup session ${tabId}:`, response.status, response.statusText);
+            }
+          }
+        } catch (error) {
+          console.error(`Error sending backup session ${tabId}:`, error);
+        }
+      }
+
+      // Clear backup after sending
+      extensionAPI.storage.local.remove(['backupSessionData'], () => {
+        console.log('Backup data sent and cleared');
+      });
+    }
+  } catch (error) {
+    console.error('Error processing backup data on startup:', error);
+  }
+})();
 
 // ==========================================
 // EVENT LISTENERS
