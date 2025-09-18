@@ -20,9 +20,9 @@ extensionAPI.runtime.onInstalled.addListener((details) => {
 (async () => {
   try {
     eventConfig = await fetchEventConfig();
-    console.log("Initial event configuration loaded:", eventConfig);
+    console.log("[INIT] Event configuration loaded:", eventConfig);
   } catch (error) {
-    console.error("Error loading initial event configuration:", error);
+    console.error("[INIT] Error loading event configuration:", error);
   }
 })();
 
@@ -72,7 +72,7 @@ function anonymizeUrl(url, shouldAnonymize) {
 // Function to update the extension icon
 function updateIcon() {
   const hasActiveSession = Object.keys(sessionData).length > 0;
-  console.log("Active sessions:", Object.keys(sessionData), "hasActiveSession:", hasActiveSession);
+  console.log("[ICON] Active sessions:", Object.keys(sessionData), "hasActiveSession:", hasActiveSession);
 
   const iconPath = hasActiveSession
     ? {
@@ -106,28 +106,28 @@ async function createNewCaptureSession(tabId) {
   try {
     // If no config available, try to fetch it
     if (!eventConfig) {
-      console.log("No event config available, trying to fetch from server");
+      console.log("[SESSION] No event config available, trying to fetch from server");
       eventConfig = await fetchEventConfig();
     }
 
     if (!eventConfig || !eventConfig.events || !Array.isArray(eventConfig.events)) {
-      console.log("No valid event configuration available, session creation skipped for tab", tabId);
+      console.log("[SESSION] No valid event configuration available, session creation skipped for tab", tabId);
       return;
     }
 
-    console.log("Creating new capture session for tab", tabId);
+    console.log("[SESSION] Creating new capture session for tab", tabId);
 
     // Get stored user ID with proper async handling
     const userResult = await getStorageWithFallback(['userId']);
 
     if (!userResult || !userResult.userId) {
-      console.error("No user ID configured in storage");
+      console.error("[SESSION] No user ID configured in storage");
       return;
     }
 
     await proceedWithSession(userResult.userId, tabId);
   } catch (error) {
-    console.error("Error creating capture session:", error);
+    console.error("[SESSION] Error creating capture session:", error);
   }
 }
 
@@ -173,15 +173,15 @@ async function proceedWithSession(userId, tabId) {
     });
 
     if (response && !response.success) {
-      console.error("Content script rejected configuration:", response.reason);
+      console.error("[SESSION] Content script rejected configuration:", response.reason);
       delete sessionData[tabId];
     } else {
-      console.log("Event configuration successfully sent", response);
+      console.log("[SESSION] Event configuration successfully sent", response);
     }
 
     updateIcon();
   } catch (error) {
-    console.error("Error in proceedWithSession:", error);
+    console.error("[SESSION] Error in proceedWithSession:", error);
     delete sessionData[tabId];
     updateIcon();
   }
@@ -190,7 +190,7 @@ async function proceedWithSession(userId, tabId) {
 // End the event capture session and send captured events to the server
 function endCaptureSession(tabId) {
   if (!sessionData[tabId]) return;
-  console.log("Ending capture session for tab", tabId);
+  console.log("[SESSION] Ending capture session for tab", tabId);
 
   // Set end time to now (normal closure - user might be inactive)
   sessionData[tabId].endTime = Date.now();
@@ -212,14 +212,14 @@ async function fetchEventConfig() {
 
         // If no server URL is configured, don't capture
         if (!result || !result.serverUrl) {
-            console.log("No server URL configured, event capture disabled");
+            console.log("[CONFIG] No server URL configured, event capture disabled");
             return null;
         }
 
         const response = await fetch(`${result.serverUrl}/start`);
 
         if (!response.ok) {
-            console.error('Server request failed:', response.status, response.statusText);
+            console.error('[CONFIG] Server request failed:', response.status, response.statusText);
             return null;
         }
 
@@ -227,30 +227,30 @@ async function fetchEventConfig() {
         try {
             serverResponse = await response.json();
         } catch (error) {
-            console.error('Invalid JSON response from server:', error);
+            console.error('[CONFIG] Invalid JSON response from server:', error);
             return null;
         }
-        console.log('Server response:', serverResponse);
+        console.log('[CONFIG] Server response:', serverResponse);
 
         let eventConfig;
         if (serverResponse.data) {
             eventConfig = serverResponse.data;
         } else {
-            console.error('Invalid server response structure:', serverResponse);
+            console.error('[CONFIG] Invalid server response structure:', serverResponse);
             return null;
         }
 
         // Validate the structure of the configuration
         if (!eventConfig.events || !Array.isArray(eventConfig.events)) {
-            console.error('Invalid event config structure - missing or invalid events array:', eventConfig);
+            console.error('[CONFIG] Invalid event config structure - missing or invalid events array:', eventConfig);
             return null;
         }
 
-        console.log('Event config extracted:', eventConfig);
+        console.log('[CONFIG] Event config extracted:', eventConfig);
         return eventConfig;
     }
     catch (error) {
-        console.error('Error fetching event config from server:', error);
+        console.error('[CONFIG] Error fetching event config from server:', error);
         return null;
     }
 }
@@ -266,7 +266,7 @@ async function sendEventsToServer(tabId) {
 
         // If no server URL is configured, just log the data locally
         if (!result || !result.serverUrl) {
-            console.log('No server URL configured. Session data (not sent):', sessionInfo);
+            console.log('[SEND] No server URL configured. Session data (not sent):', sessionInfo);
             return;
         }
 
@@ -279,13 +279,13 @@ async function sendEventsToServer(tabId) {
         });
 
         if (response.ok) {
-            console.log('Events sent successfully to server');
+            console.log('[SEND] Events sent successfully to server');
         } else {
-            console.error('Server returned error:', response.status, response.statusText);
+            console.error('[SEND] Server returned error:', response.status, response.statusText);
         }
     } catch (error) {
-        console.error('Error sending events to server:', error);
-        console.error('Session data that failed to send:', sessionInfo);
+        console.error('[SEND] Error sending events to server:', error);
+        console.error('[SEND] Session data that failed to send:', sessionInfo);
     }
 }
 
@@ -295,12 +295,12 @@ async function sendEventsToServer(tabId) {
 
 // Handle configuration update requests
 async function handleConfigUpdate() {
-  console.log("Configuration updated, fetching new event config");
+  console.log("[CONFIG] Configuration updated, fetching new event config");
   try {
     eventConfig = await fetchEventConfig();
-    console.log("Event configuration reloaded:", eventConfig);
+    console.log("[CONFIG] Event configuration reloaded:", eventConfig);
   } catch (error) {
-    console.error("Error reloading event configuration:", error);
+    console.error("[CONFIG] Error reloading event configuration:", error);
   }
 }
 
@@ -326,7 +326,7 @@ async function handleDebugModeChange(debugMode) {
           (response) => {
             // Don't reject on individual tab failures - tab might be closed
             if (extensionAPI.runtime.lastError) {
-              console.log(`Failed to send debug mode to tab ${tab.id}:`, extensionAPI.runtime.lastError.message);
+              console.log(`[DEBUG] Failed to send debug mode to tab ${tab.id}:`, extensionAPI.runtime.lastError.message);
             }
             resolve();
           }
@@ -335,9 +335,9 @@ async function handleDebugModeChange(debugMode) {
     );
 
     await Promise.all(messagePromises);
-    console.log("Debug mode change sent to all tabs");
+    console.log("[DEBUG] Debug mode change sent to all tabs");
   } catch (error) {
-    console.error("Error updating debug mode across tabs:", error);
+    console.error("[DEBUG] Error updating debug mode across tabs:", error);
   }
 }
 
@@ -349,7 +349,7 @@ function handleMessage(message, sender, sendResponse) {
     }
   } else if (message.type === "captureEnded") {
     if (sender.tab) {
-      console.log("Capture ended by timeout for tab", sender.tab.id);
+      console.log("[TIMEOUT] Capture ended by timeout for tab", sender.tab.id);
       endCaptureSession(sender.tab.id);
     }
   } else if (message.type === "getSessionCount") {
@@ -370,7 +370,7 @@ function handleMessage(message, sender, sendResponse) {
 setInterval(() => {
   // Validate sessionData before backup
   if (!sessionData || typeof sessionData !== 'object') {
-    console.warn('Invalid sessionData object, skipping backup');
+    console.warn('[BACKUP] Invalid sessionData object, skipping backup');
     return;
   }
 
@@ -391,7 +391,7 @@ setInterval(() => {
         validSessions[tabId] = session;
         validCount++;
       } else {
-        console.warn(`Invalid session data for tab ${tabId}, excluding from backup`);
+        console.warn(`[BACKUP] Invalid session data for tab ${tabId}, excluding from backup`);
       }
     });
 
@@ -401,21 +401,21 @@ setInterval(() => {
         backupSessionData: validSessions
       }, () => {
         if (extensionAPI.runtime.lastError) {
-          console.error('Error backing up session data:', extensionAPI.runtime.lastError);
+          console.error('[BACKUP] Error saving to storage:', extensionAPI.runtime.lastError);
         } else {
-          console.log(`Backup: ${validCount} sessions, ${totalEvents} total events saved to storage`);
+          console.log(`[BACKUP] Saved ${validCount} sessions with ${totalEvents} total events to storage`);
         }
       });
     } else {
-      console.warn('No valid sessions to backup');
+      console.warn('[BACKUP] No valid sessions to backup');
     }
   } else {
     // No active sessions, clear storage
     extensionAPI.storage.local.remove(['backupSessionData'], () => {
       if (extensionAPI.runtime.lastError) {
-        console.error('Error clearing backup storage:', extensionAPI.runtime.lastError);
+        console.error('[BACKUP] Error clearing storage:', extensionAPI.runtime.lastError);
       } else {
-        console.log('No active sessions, cleared backup storage');
+        console.log('[BACKUP] Storage cleared - no active sessions');
       }
     });
   }
@@ -429,13 +429,18 @@ setInterval(() => {
     });
 
     if (result.backupSessionData && Object.keys(result.backupSessionData).length > 0) {
-      console.log('Found backup session data, sending to server...');
+      const sessionCount = Object.keys(result.backupSessionData).length;
+      console.log(`[RECOVERY] Found ${sessionCount} backup sessions, sending to server...`);
+
+      let sentCount = 0;
+      let failedCount = 0;
 
       // Send each session from backup
       for (const [tabId, sessionInfo] of Object.entries(result.backupSessionData)) {
         // Validate backup session before sending
         if (!sessionInfo || !sessionInfo.userId || !sessionInfo.startTime || !Array.isArray(sessionInfo.events)) {
-          console.error(`Invalid backup session for tab ${tabId}, skipping`);
+          console.error(`[RECOVERY] Invalid backup session for tab ${tabId}, skipping`);
+          failedCount++;
           continue;
         }
 
@@ -458,23 +463,31 @@ setInterval(() => {
             });
 
             if (response.ok) {
-              console.log(`Successfully sent backup session for tab ${tabId} (${sessionInfo.events.length} events)`);
+              console.log(`[RECOVERY] Successfully sent session tab:${tabId} with ${sessionInfo.events.length} events`);
+              sentCount++;
             } else {
-              console.error(`Server error for backup session ${tabId}:`, response.status, response.statusText);
+              console.error(`[RECOVERY] Server error tab:${tabId} - ${response.status} ${response.statusText}`);
+              failedCount++;
             }
+          } else {
+            console.warn('[RECOVERY] No server URL configured, cannot send backup data');
+            failedCount++;
           }
         } catch (error) {
-          console.error(`Error sending backup session ${tabId}:`, error);
+          console.error(`[RECOVERY] Network error tab:${tabId} -`, error.message);
+          failedCount++;
         }
       }
 
       // Clear backup after sending
       extensionAPI.storage.local.remove(['backupSessionData'], () => {
-        console.log('Backup data sent and cleared');
+        console.log(`[RECOVERY] Completed: ${sentCount} sent, ${failedCount} failed - backup data cleared`);
       });
+    } else {
+      console.log('[RECOVERY] No backup data found');
     }
   } catch (error) {
-    console.error('Error processing backup data on startup:', error);
+    console.error('[RECOVERY] Error processing backup data on startup:', error);
   }
 })();
 
@@ -484,20 +497,20 @@ setInterval(() => {
 
 // Configure event capture methods in the content script
 extensionAPI.tabs.onCreated.addListener(async (tab) => {
-  console.log("Tab created:", tab);
+  console.log("[TAB] Tab created:", tab);
   await createNewCaptureSession(tab.id);
 });
 
 // When a tab is closed, send captured events to the server
 extensionAPI.tabs.onRemoved.addListener((tabId) => {
-  console.log("Tab removed:", tabId);
+  console.log("[TAB] Tab removed:", tabId);
   endCaptureSession(tabId);
 });
 
 // When a tab is updated, send captured events to the server and create a new session
 extensionAPI.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   if (changeInfo.status === "complete") {
-    console.log("Tab updated:", tabId, "URL:", tab.url);
+    console.log("[TAB] Tab updated:", tabId, "URL:", tab.url);
     endCaptureSession(tabId);
     await createNewCaptureSession(tabId);
   }
