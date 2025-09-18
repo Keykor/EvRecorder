@@ -104,6 +104,12 @@ function updateIcon() {
 // SESSION MANAGEMENT FUNCTIONS
 // ==========================================
 
+// Remove session and update backup
+function removeSessionAndUpdateBackup(tabId) {
+  delete sessionData[tabId];
+  performBackup();
+}
+
 // Create a new event capture session if there is an event configuration
 async function createNewCaptureSession(tabId) {
   try {
@@ -177,7 +183,7 @@ async function proceedWithSession(userId, tabId) {
 
     if (response && !response.success) {
       console.error("[SESSION] Content script rejected configuration:", response.reason);
-      delete sessionData[tabId];
+      removeSessionAndUpdateBackup(tabId);
     } else {
       console.log("[SESSION] Event configuration successfully sent", response);
     }
@@ -185,7 +191,7 @@ async function proceedWithSession(userId, tabId) {
     updateIcon();
   } catch (error) {
     console.error("[SESSION] Error in proceedWithSession:", error);
-    delete sessionData[tabId];
+    removeSessionAndUpdateBackup(tabId);
     updateIcon();
   }
 }
@@ -199,7 +205,7 @@ function endCaptureSession(tabId) {
   sessionData[tabId].endTime = Date.now();
 
   sendEventsToServer(tabId);
-  delete sessionData[tabId];
+  removeSessionAndUpdateBackup(tabId);
   updateIcon();
 }
 
@@ -369,8 +375,8 @@ function handleMessage(message, sender, sendResponse) {
 // STORAGE BACKUP FUNCTIONS
 // ==========================================
 
-// Backup sessionData to storage every 1 minute
-setInterval(() => {
+// Function to backup sessionData to storage
+function performBackup() {
   // Validate sessionData before backup
   if (!sessionData || typeof sessionData !== 'object') {
     console.warn('[BACKUP] Invalid sessionData object, skipping backup');
@@ -422,7 +428,10 @@ setInterval(() => {
       }
     });
   }
-}, BACKUP_INTERVAL_MS);
+}
+
+// Backup sessionData to storage every 1 minute
+setInterval(performBackup, BACKUP_INTERVAL_MS);
 
 // On extension startup, check for backup data and send it
 (async () => {
