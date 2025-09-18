@@ -16,6 +16,9 @@
 - 📈 Visual status indicators
 - 🌐 Cross-browser compatibility (Chrome, Firefox, Edge, Opera)
 - 🛡️ Manifest V3 with proper Content Security Policy
+- 💾 Automatic data backup every 5 minutes
+- 🔄 Recovery on browser restart
+- 📝 Standardized logging with prefixes
 
 ## 🎨 Extension States
 
@@ -145,6 +148,32 @@ Includes API documentation, examples, and setup instructions.
 5. 🎯 Icon shows capture status (inactive/active)
 6. 🌐 Works seamlessly across Chrome, Firefox, Edge, and Opera
 7. ❌ No capture without server configuration
+
+## 🛡️ Data Protection & Recovery
+
+The extension includes robust data protection mechanisms:
+
+### 💾 Automatic Backup
+- 📅 **Every 5 minutes**: Session data automatically saved to local storage
+- 🔍 **Data validation**: Only valid sessions are backed up
+- 🧹 **Auto-cleanup**: Storage cleared when no active sessions
+
+### 🔄 Recovery System
+- 🚀 **On startup**: Extension checks for pending data from previous session
+- 📤 **Auto-send**: Pending data automatically sent to server
+- ⏰ **Smart timestamps**: Uses last event time for forced closures
+- 📊 **Recovery stats**: Logs success/failure counts for monitoring
+
+### 📝 Logging System
+- 🏷️ **Prefixed logs**: Easy filtering by functionality
+  - `[INIT]` - Extension initialization
+  - `[SESSION]` - Session management
+  - `[BACKUP]` - Data backup operations
+  - `[RECOVERY]` - Data recovery on startup
+  - `[CONFIG]` - Server configuration
+  - `[SEND]` - Data transmission
+  - `[TAB]` - Browser tab events
+  - `[DEBUG]` - Debug mode operations
 
 ## 🔄 Debug Mode
 
